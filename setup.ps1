@@ -2,35 +2,38 @@
 
 <#
 .SYNOPSIS
-Install the miniconda-python-env skill for Claude Code and/or Codex.
+Install (and configure) the miniconda-python-env skill for Claude Code
+and/or Codex.
 
 .DESCRIPTION
-Reads SKILL.md.template, substitutes path placeholders with your preferred
-paths, and writes the final SKILL.md into your agent's skills folder.
+This script IS the install. It will:
+  1. Explain what the skill does
+  2. Ask you for TWO paths (with default suggestions and explanation)
+  3. Generate a personalized SKILL.md and copy it to your agent's
+     skills directory
+
+After it finishes, restart your agent (Claude Code / Codex) and the
+skill is live. Re-run any time with -Force to reconfigure.
 
 .PARAMETER TempEnvRoot
-Where temporary / standalone Python envs (Scenarios A and B) should be created.
-Default: D:\Projects\Claude\Temp. Examples: D:\PyTemp, C:\Users\<you>\python-envs.
+Override the temp-env-root prompt. Default: D:\Projects\Claude\Temp.
 
 .PARAMETER ToolsRoot
-The same root used by the windows-tools-install-manager sister skill — used
-when chaining into it to install Miniconda itself if missing.
-Default: D:\Tools. Examples: C:\MyTools, D:\Apps.
+Override the tools-root prompt. Default: D:\Tools.
 
 .PARAMETER Agent
-Which agent to install the skill for: 'claude', 'codex', or 'both'.
-Default: both.
+Which agent to install for: 'claude', 'codex', or 'both'. Default: both.
 
 .PARAMETER Force
-Overwrite existing SKILL.md without prompting.
+Overwrite existing SKILL.md without asking.
 
 .EXAMPLE
 .\setup.ps1
-Interactive setup using defaults.
+Fully interactive — recommended for first-time install.
 
 .EXAMPLE
-.\setup.ps1 -TempEnvRoot "D:\PyTemp" -ToolsRoot "C:\MyTools" -Agent claude -Force
-Non-interactive setup for Claude Code only.
+.\setup.ps1 -TempEnvRoot "D:\PyTemp" -ToolsRoot "D:\Tools" -Agent claude -Force
+Non-interactive — useful for scripted reinstall.
 #>
 
 [CmdletBinding()]
@@ -44,62 +47,127 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# Locate the template (relative to this script)
+# ----- Banner -----
+Write-Host ""
+Write-Host "==================================================================" -ForegroundColor Cyan
+Write-Host "  miniconda-python-env  — install + configure" -ForegroundColor Cyan
+Write-Host "==================================================================" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "This skill standardizes how your AI agent uses Python: every Python"
+Write-Host "task gets its own isolated Miniconda env, with auto-classification"
+Write-Host "into one of three scenarios and strict cleanup rules:"
+Write-Host ""
+Write-Host "  A. Temp script         - env auto-deleted after task"
+Write-Host "  B. Standalone keeper   - env kept + environment.yml generated"
+Write-Host "  C. Formal project      - env lives inside the project root"
+Write-Host ""
+Write-Host "Before installing, I need to know TWO directories." -ForegroundColor Yellow
+Write-Host ""
+
+# ----- Locate template -----
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $templatePath = Join-Path $scriptDir 'skills\miniconda-python-env\SKILL.md.template'
 
 if (-not (Test-Path $templatePath)) {
-    Write-Error "Template not found at: $templatePath`nAre you running setup.ps1 from the plugin repo root?"
+    Write-Error "Template not found at: $templatePath`nAre you running setup.ps1 from the cloned repo root?"
     exit 1
 }
 
-# Prompt for TempEnvRoot if not provided
+# ----- Prompt: TempEnvRoot -----
 if ([string]::IsNullOrWhiteSpace($TempEnvRoot)) {
-    $default = 'D:\Projects\Claude\Temp'
+    Write-Host "------------------------------------------------------------------" -ForegroundColor DarkGray
+    Write-Host "  [ Q1 ]  Temp Python env root  (Scenarios A and B)" -ForegroundColor Green
+    Write-Host "------------------------------------------------------------------" -ForegroundColor DarkGray
     Write-Host ""
-    Write-Host "Where should temporary Python envs go (Scenarios A and B)?" -ForegroundColor Cyan
-    Write-Host "  Examples: D:\Projects\Claude\Temp, D:\PyTemp, C:\Users\<you>\python-envs"
-    $userInput = Read-Host "Path [default: $default]"
+    Write-Host "  When a Python task is a one-off (Scenario A) or a standalone"
+    Write-Host "  keeper script that doesn't belong to any project (Scenario B),"
+    Write-Host "  the skill creates its env under this directory. Each task"
+    Write-Host "  gets its own subfolder named '<task>-<YYYYMMDD>'."
+    Write-Host ""
+    Write-Host "  Examples of how the skill will use it:"
+    Write-Host ""
+    Write-Host "    <YOUR_ROOT>\image-ocr-20260512\" -ForegroundColor DarkGray
+    Write-Host "    <YOUR_ROOT>\csv-merge-20260512\" -ForegroundColor DarkGray
+    Write-Host "    <YOUR_ROOT>\yt-dlp-wrapper-20260512\" -ForegroundColor DarkGray
+    Write-Host ""
+    Write-Host "  For Scenario A (one-off), the env subfolder is deleted right"
+    Write-Host "  after the task. For Scenario B (keep & re-run), it stays."
+    Write-Host ""
+    Write-Host "  Common choices:"
+    Write-Host "    - D:\Projects\Claude\Temp    (default)"
+    Write-Host "    - D:\PyTemp"
+    Write-Host "    - C:\Users\<you>\python-envs"
+    Write-Host ""
+    Write-Host "  Note: if this directory doesn't exist yet, the skill will ASK"
+    Write-Host "  before creating it — strict scope, never silent."
+    Write-Host ""
+    $default = 'D:\Projects\Claude\Temp'
+    $userInput = Read-Host "  Your choice [default: $default]"
     $TempEnvRoot = if ([string]::IsNullOrWhiteSpace($userInput)) { $default } else { $userInput.Trim() }
 }
 
-# Prompt for ToolsRoot if not provided
+# Normalize and validate
+$TempEnvRoot = $TempEnvRoot.TrimEnd('\', '/')
+if ($TempEnvRoot -notmatch '^[A-Za-z]:\\') {
+    Write-Warning "'$TempEnvRoot' doesn't look like an absolute Windows path."
+    $confirm = Read-Host "  Use it anyway? [y/N]"
+    if ($confirm -ne 'y' -and $confirm -ne 'Y') { exit 1 }
+}
+
+Write-Host ""
+Write-Host "  ✓ TempEnvRoot = $TempEnvRoot" -ForegroundColor Green
+Write-Host ""
+
+# ----- Prompt: ToolsRoot -----
 if ([string]::IsNullOrWhiteSpace($ToolsRoot)) {
-    $default = 'D:\Tools'
+    Write-Host "------------------------------------------------------------------" -ForegroundColor DarkGray
+    Write-Host "  [ Q2 ]  Tools install root  (only used if Miniconda is missing)" -ForegroundColor Green
+    Write-Host "------------------------------------------------------------------" -ForegroundColor DarkGray
     Write-Host ""
-    Write-Host "Where does the windows-tools-install-manager skill install system tools?" -ForegroundColor Cyan
-    Write-Host "  (Used only as the proposed install location for Miniconda itself if it's missing.)"
-    Write-Host "  Examples: D:\Tools, C:\MyTools"
-    $userInput = Read-Host "Path [default: $default]"
+    Write-Host "  If this skill detects that Miniconda is NOT installed on your"
+    Write-Host "  machine, it will chain into the sister skill"
+    Write-Host "  'windows-tools-install-manager' to install Miniconda properly."
+    Write-Host "  In that case, Miniconda goes under this root:"
+    Write-Host ""
+    Write-Host "    <YOUR_ROOT>\miniconda\" -ForegroundColor DarkGray
+    Write-Host ""
+    Write-Host "  IMPORTANT: this should match the InstallRoot you used when you"
+    Write-Host "  set up windows-tools-install-manager. If you haven't installed"
+    Write-Host "  that sister skill yet, pick a value that makes sense (you can"
+    Write-Host "  always reconfigure later)."
+    Write-Host ""
+    Write-Host "  If Miniconda is ALREADY installed (most users), this value is"
+    Write-Host "  never actually used at runtime — it's just a sensible default"
+    Write-Host "  in case Miniconda gets uninstalled later."
+    Write-Host ""
+    Write-Host "  Common choices:"
+    Write-Host "    - D:\Tools         (default)"
+    Write-Host "    - C:\MyTools"
+    Write-Host "    - D:\Apps"
+    Write-Host ""
+    $default = 'D:\Tools'
+    $userInput = Read-Host "  Your choice [default: $default]"
     $ToolsRoot = if ([string]::IsNullOrWhiteSpace($userInput)) { $default } else { $userInput.Trim() }
 }
 
-# Normalize: strip trailing slashes
-$TempEnvRoot = $TempEnvRoot.TrimEnd('\', '/')
-$ToolsRoot   = $ToolsRoot.TrimEnd('\', '/')
-
-# Validate they look like absolute Windows paths
-foreach ($p in @(@{ name = 'TempEnvRoot'; value = $TempEnvRoot }, @{ name = 'ToolsRoot'; value = $ToolsRoot })) {
-    if ($p.value -notmatch '^[A-Za-z]:\\') {
-        Write-Warning "$($p.name) '$($p.value)' doesn't look like an absolute Windows path (e.g., 'D:\Tools')."
-        $confirm = Read-Host "Use it anyway? [y/N]"
-        if ($confirm -ne 'y' -and $confirm -ne 'Y') { exit 1 }
-    }
+# Normalize and validate
+$ToolsRoot = $ToolsRoot.TrimEnd('\', '/')
+if ($ToolsRoot -notmatch '^[A-Za-z]:\\') {
+    Write-Warning "'$ToolsRoot' doesn't look like an absolute Windows path."
+    $confirm = Read-Host "  Use it anyway? [y/N]"
+    if ($confirm -ne 'y' -and $confirm -ne 'Y') { exit 1 }
 }
 
 Write-Host ""
-Write-Host "Configured:" -ForegroundColor Cyan
-Write-Host "  TempEnvRoot = $TempEnvRoot"
-Write-Host "  ToolsRoot   = $ToolsRoot"
-Write-Host "  Agent       = $Agent"
+Write-Host "  ✓ ToolsRoot = $ToolsRoot" -ForegroundColor Green
 Write-Host ""
 
-# Read template and substitute placeholders (literal string replace, not regex)
+# ----- Build content -----
 $content = (Get-Content -Path $templatePath -Raw -Encoding UTF8) `
     .Replace('{{TEMP_ENV_ROOT}}', $TempEnvRoot) `
     .Replace('{{TOOLS_ROOT}}',    $ToolsRoot)
 
-# Determine target installation locations
+# ----- Resolve targets -----
 $targets = @()
 if ($Agent -in @('claude', 'both')) {
     $targets += [PSCustomObject]@{
@@ -114,12 +182,16 @@ if ($Agent -in @('codex', 'both')) {
     }
 }
 
-# Install
+Write-Host "------------------------------------------------------------------" -ForegroundColor DarkGray
+Write-Host "  Installing SKILL.md ..." -ForegroundColor Green
+Write-Host "------------------------------------------------------------------" -ForegroundColor DarkGray
+Write-Host ""
+
 foreach ($target in $targets) {
     $outFile = Join-Path $target.Path 'SKILL.md'
 
     if ((Test-Path $outFile) -and -not $Force) {
-        Write-Host "[$($target.Agent)] SKILL.md already exists at: $outFile" -ForegroundColor Yellow
+        Write-Host "  [$($target.Agent)] $outFile already exists." -ForegroundColor Yellow
         $confirm = Read-Host "  Overwrite? [y/N]"
         if ($confirm -ne 'y' -and $confirm -ne 'Y') {
             Write-Host "  Skipped." -ForegroundColor DarkYellow
@@ -129,10 +201,24 @@ foreach ($target in $targets) {
 
     New-Item -ItemType Directory -Path $target.Path -Force | Out-Null
     Set-Content -Path $outFile -Value $content -Encoding UTF8
-    Write-Host "[$($target.Agent)] Installed: $outFile" -ForegroundColor Green
+    Write-Host "  ✓ [$($target.Agent)] $outFile" -ForegroundColor Green
 }
 
+# ----- Summary -----
 Write-Host ""
-Write-Host "Done. Restart Claude Code / Codex to pick up the skill." -ForegroundColor Yellow
-Write-Host "Tip: install the sister skill 'windows-tools-install-manager' too — this skill chains into it" -ForegroundColor DarkGray
-Write-Host "     when Miniconda is missing." -ForegroundColor DarkGray
+Write-Host "==================================================================" -ForegroundColor Cyan
+Write-Host "  Install complete." -ForegroundColor Cyan
+Write-Host "==================================================================" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "  Next steps:" -ForegroundColor Yellow
+Write-Host "    1. Restart Claude Code / Codex (close and reopen)"
+Write-Host "    2. Try saying:  '用 Python 处理这个 CSV'  or  'install pandas'"
+Write-Host "       The skill should activate and propose an env plan."
+Write-Host ""
+Write-Host "  Sister skill recommendation:" -ForegroundColor Yellow
+Write-Host "    Install 'windows-tools-install-manager' too — this skill chains"
+Write-Host "    into it when Miniconda is missing."
+Write-Host ""
+Write-Host "  To reconfigure (different paths), re-run:" -ForegroundColor DarkGray
+Write-Host "    .\setup.ps1 -TempEnvRoot 'D:\NewTemp' -ToolsRoot 'D:\NewTools' -Force" -ForegroundColor DarkGray
+Write-Host ""
