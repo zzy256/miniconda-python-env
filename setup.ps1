@@ -48,6 +48,36 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# ----- AI-agent / non-interactive guard -----
+# If stdin is redirected (AI tool call context) AND neither path parameter was
+# passed, Read-Host silently returns empty and the script falls back to defaults
+# — meaning the user never gets asked. Refuse to proceed in that case.
+if ([string]::IsNullOrWhiteSpace($TempEnvRoot) -and [string]::IsNullOrWhiteSpace($ToolsRoot) -and [System.Console]::IsInputRedirected) {
+    Write-Host ""
+    Write-Host "==================================================================" -ForegroundColor Red
+    Write-Host "  setup.ps1 cannot run interactively here (stdin is redirected)." -ForegroundColor Red
+    Write-Host "==================================================================" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "You appear to be running setup.ps1 inside an AI agent's tool call"
+    Write-Host "(Codex, Claude Code's Bash, etc.). The script's interactive Read-Host"
+    Write-Host "prompts WILL NOT reach the human user — they'll silently return empty"
+    Write-Host "and the script will use defaults without asking. That's a UX bug."
+    Write-Host ""
+    Write-Host "If you are an AI agent installing this skill for a user:" -ForegroundColor Yellow
+    Write-Host "  Use Mode 1 in the README instead — fetch SKILL.md directly via"
+    Write-Host "  raw.githubusercontent.com, ASK the user for TempEnvRoot + ToolsRoot,"
+    Write-Host "  then write the config JSON file at"
+    Write-Host "  ~/.config/claude-skills/miniconda-python-env.json"
+    Write-Host "  (full prompt template in README's '⭐ Mode 1' section)."
+    Write-Host ""
+    Write-Host "If you are a human running this from a real terminal:" -ForegroundColor Yellow
+    Write-Host "  Either invoke from an interactive PowerShell (no piping/redirect),"
+    Write-Host "  or pass paths explicitly:"
+    Write-Host "    .\setup.ps1 -TempEnvRoot 'D:\Projects\Claude\Temp' -ToolsRoot 'D:\Tools' -Force"
+    Write-Host ""
+    exit 1
+}
+
 # ----- Banner -----
 Write-Host ""
 Write-Host "==================================================================" -ForegroundColor Cyan

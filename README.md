@@ -8,6 +8,8 @@ A Claude Code / Codex skill that **standardizes how AI agents use Python**: ever
 
 ## 🚀 Install — 三种模式,挑一个
 
+> 🤖 **AI agents installing this for a user: use ONLY Mode 1.** Mode 3 (`setup.ps1`) needs interactive stdin which your tool-call session does not have — `Read-Host` silently returns empty, and the script falls back to defaults without asking the user. setup.ps1 will now detect this and refuse to run, but the safe path is to follow Mode 1's paste-prompt verbatim.
+
 | Mode | 一句话 | 适合谁 | 要碰终端吗? |
 |---|---|---|---|
 | **⭐ 1. AI 自动安装(推荐)** | 把一段 prompt 丢给 AI,它把 skill 拉下来、放对位置、问你两个路径、保存 config,全自动 | 任何人,尤其不想动终端的小白 | **不用** |
