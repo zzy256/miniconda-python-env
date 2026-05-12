@@ -15,7 +15,7 @@ The skill is **self-configuring on first use**: whichever mode you pick, the fir
 In Claude Code:
 
 ```
-/plugin marketplace add https://github.com/<your-user>/miniconda-python-env
+/plugin marketplace add https://github.com/zzy/miniconda-python-env
 /plugin install miniconda-python-env@miniconda-python-env
 ```
 
@@ -29,7 +29,7 @@ Restart Claude Code. The next time you say something like "用 Python 处理 X" 
 If you want to set paths BEFORE the first trigger (zero prompts at first use):
 
 ```powershell
-git clone https://github.com/<your-user>/miniconda-python-env.git
+git clone https://github.com/zzy/miniconda-python-env.git
 cd miniconda-python-env
 .\setup.ps1
 ```
@@ -52,11 +52,11 @@ Non-interactive form:
 
 Paste this entire instruction to an AI agent (Claude Code, Codex, or any AI with file-write access):
 
-> Please install AND configure this skill for me: `https://github.com/<your-user>/miniconda-python-env`
+> Please install AND configure this skill for me: `https://github.com/zzy/miniconda-python-env`
 >
 > Steps:
 >
-> 1. **Fetch** the raw content of `skills/miniconda-python-env/SKILL.md` from the repo's `main` branch (use `raw.githubusercontent.com/<your-user>/miniconda-python-env/main/skills/miniconda-python-env/SKILL.md`)
+> 1. **Fetch** the raw content of `skills/miniconda-python-env/SKILL.md` from the repo's `main` branch (use `raw.githubusercontent.com/zzy/miniconda-python-env/main/skills/miniconda-python-env/SKILL.md`)
 >
 > 2. **Save** it to:
 >    - `~/.claude/skills/miniconda-python-env/SKILL.md` (for Claude Code)
@@ -77,7 +77,7 @@ Paste this entire instruction to an AI agent (Claude Code, Codex, or any AI with
 >
 > 6. **Do NOT try to run `setup.ps1`** — it requires interactive stdin that won't work in your session. You're replacing what setup.ps1 does (writing the config + dropping SKILL.md) by doing steps 2 and 3 above.
 >
-> 7. **Recommend** the sister skill `windows-tools-install-manager` for system-level tool installs: `https://github.com/<your-user>/windows-tools-install-manager` (install it the same Mode C way). The two skills cross-reference each other and share the `<TOOLS_ROOT>` path convention.
+> 7. **Recommend** the sister skill `windows-tools-install-manager` for system-level tool installs: `https://github.com/zzy/windows-tools-install-manager` (install it the same Mode C way). The two skills cross-reference each other and share the `<TOOLS_ROOT>` path convention.
 
 After your AI finishes these steps, restart your agent. The skill is installed AND configured — it'll work silently from the first real use.
 
@@ -126,7 +126,7 @@ The skill description includes precise NOT-USE cases to avoid false fires (code 
 
 ## Sister skill
 
-For **system-level tool installs** (ffmpeg, 7zip, Miniconda itself, etc.), see **[windows-tools-install-manager](https://github.com/<your-user>/windows-tools-install-manager)**. When Miniconda is missing, this skill chains into it to install Miniconda under `<TOOLS_ROOT>\miniconda\`. They share path conventions.
+For **system-level tool installs** (ffmpeg, 7zip, Miniconda itself, etc.), see **[windows-tools-install-manager](https://github.com/zzy/windows-tools-install-manager)**. When Miniconda is missing, this skill chains into it to install Miniconda under `<TOOLS_ROOT>\miniconda\`. They share path conventions.
 
 ## Requirements
 
