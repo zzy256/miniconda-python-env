@@ -6,53 +6,63 @@ A Claude Code / Codex skill that **standardizes how AI agents use Python**: ever
 
 ---
 
-## 🚀 Install
+## 🚀 Install — pick one of three modes
 
-> ⚠️ **DO NOT use `/plugin install` from a Claude Code marketplace** — this skill needs path configuration that the marketplace flow can't run. **`.\setup.ps1` IS the install.**
+The skill is **self-configuring on first use**: whichever mode you pick, the first time the skill runs it'll ask you for two paths (or read a pre-filled config). Choose the mode that matches your style.
 
-Open PowerShell and run:
+### Mode A — Claude Code `/plugin install` (Recommended for most users)
+
+In Claude Code:
+
+```
+/plugin marketplace add https://github.com/<your-user>/miniconda-python-env
+/plugin install miniconda-python-env@miniconda-python-env
+```
+
+Restart Claude Code. The next time you say something like "用 Python 处理 X" or "install pandas", the skill will:
+1. Ask you ONCE for two paths (with clear explanations of what each is for)
+2. Save your answers to `~/.config/claude-skills/miniconda-python-env.json`
+3. Proceed with the task — and from then on, never ask again
+
+### Mode B — Pre-configure with `setup.ps1` (Power user)
+
+If you want to set paths BEFORE the first trigger (zero prompts at first use):
 
 ```powershell
-# 1. Clone the repo to anywhere
 git clone https://github.com/<your-user>/miniconda-python-env.git
 cd miniconda-python-env
-
-# 2. Run the setup script (THIS is the install)
 .\setup.ps1
 ```
 
 `setup.ps1` will:
+1. Ask you for TWO paths (with detailed explanations):
+   - **TempEnvRoot** — where temp/standalone Python envs (Scenarios A & B) live
+   - **ToolsRoot** — same root the sister skill uses for system tools; only used if Miniconda gets installed
+2. Write `~/.config/claude-skills/miniconda-python-env.json` for you
+3. Copy `SKILL.md` into both `~/.claude/skills/...` and `~/.agents/skills/...`
 
-1. **Explain** what the skill does
-2. **Ask you for TWO paths** (with detailed explanations of what each is for):
-   - **TempEnvRoot** — where temp/standalone Python envs (Scenarios A & B) live (default: `D:\Projects\Claude\Temp`)
-   - **ToolsRoot** — same root the sister skill uses for system tools; only used if Miniconda needs to be installed (default: `D:\Tools`)
-3. **Generate** a personalized `SKILL.md` from the template with your paths baked in
-4. **Copy** it into your agent's skills directory:
-   - `%USERPROFILE%\.claude\skills\miniconda-python-env\SKILL.md` (Claude Code)
-   - `%USERPROFILE%\.agents\skills\miniconda-python-env\SKILL.md` (Codex)
+After this, the first trigger will silently read the config and proceed.
 
-After it finishes, **restart Claude Code / Codex** and the skill is live.
-
-### Non-interactive install
-
+Non-interactive form:
 ```powershell
 .\setup.ps1 -TempEnvRoot "D:\PyTemp" -ToolsRoot "D:\Tools" -Agent claude -Force
 ```
 
-Options:
-- `-TempEnvRoot <path>` — skip the first prompt
-- `-ToolsRoot <path>` — skip the second prompt
-- `-Agent <claude|codex|both>` — limit which agent to install for (default: both)
-- `-Force` — overwrite existing SKILL.md without confirmation
+### Mode C — Ask an AI to install it for you
 
-### Reconfigure later
+Paste this entire instruction to an AI agent (Claude Code, Codex, ChatGPT with file access, etc.):
 
-Just re-run `setup.ps1`:
+> Please install this skill for me: `https://github.com/<your-user>/miniconda-python-env`
+>
+> Steps:
+> 1. Fetch the raw content of `skills/miniconda-python-env/SKILL.md` from the repo's `main` branch (e.g., via `raw.githubusercontent.com`)
+> 2. Save it to **`~/.claude/skills/miniconda-python-env/SKILL.md`** (for Claude Code) AND/OR **`~/.agents/skills/miniconda-python-env/SKILL.md`** (for Codex) — create parent dirs as needed
+> 3. Confirm to me that it's installed and tell me what the skill does
+> 4. Note: do NOT try to run `setup.ps1` — it requires interactive stdin which won't work in your session. The skill self-configures on first trigger.
+> 5. Suggest I restart my agent so it picks up the new skill
+> 6. Also recommend I install the sister skill `windows-tools-install-manager` for system-level tool installs
 
-```powershell
-.\setup.ps1 -TempEnvRoot "E:\NewPyHome" -Force
-```
+The skill will then ask for paths the first time it activates.
 
 ---
 
@@ -60,21 +70,32 @@ Just re-run `setup.ps1`:
 
 When the user (or the AI agent, mid-task) needs Python:
 
-1. **Detects Miniconda** — if missing, chains into the sister skill [windows-tools-install-manager](#sister-skill) to install it
-2. **Classifies the task** into one of three scenarios (with a one-line reasoning shown to the user, who can override):
+1. **Step 0 — silently load** `<TEMP_ENV_ROOT>` and `<TOOLS_ROOT>` from `~/.config/claude-skills/miniconda-python-env.json` (or asks you if config is missing — happens once, ever)
+2. **Detects Miniconda** — if missing, chains into the sister skill [windows-tools-install-manager](#sister-skill) to install it
+3. **Classifies the task** into one of three scenarios (with reasoning shown; user can override):
 
-   | Scenario | When it applies | Env location | Cleanup |
+   | Scenario | When | Env location | Cleanup |
    |---|---|---|---|
-   | **A — Temp** | One-off task, no project, no reuse | `<TempEnvRoot>\<task>-<YYYYMMDD>\` | Deleted after task |
-   | **B — Standalone** | User wants to keep & re-run the script later, not a project | `<TempEnvRoot>\<task>-<YYYYMMDD>\` | Kept + `environment.yml` generated |
-   | **C — Project** | Python plays an ongoing role in a project (any kind: Python, frontend, backend, data, mixed-language) | `<project-root>\.conda\` | Kept inside project + `environment.yml` generated |
+   | **A — Temp** | One-off task, no project, no reuse | `<TEMP_ENV_ROOT>\<task>-<YYYYMMDD>\` | Deleted after task |
+   | **B — Standalone** | Keep & re-run script, not part of a project | `<TEMP_ENV_ROOT>\<task>-<YYYYMMDD>\` | Kept + `environment.yml` |
+   | **C — Project** | Python plays an ongoing role in a project | `<project-root>\.conda\` | Kept inside project + `environment.yml` |
 
-3. **Presents an env plan** (classification, path, name, Python version, deps, cleanup policy) and waits for explicit user confirmation
-4. **Creates env** via `conda create --prefix <path> python=<v> -c conda-forge --override-channels -y` (conda-forge avoids the Anaconda ToS error introduced in 2024+)
-5. **Installs deps with conda first, pip only as fallback** — better binary compatibility on Windows, faithful `environment.yml`
-6. **Runs the script** via the env's Python directly (no activation needed)
-7. **For Scenario A**: deletes ONLY the task's env subfolder afterward — strict scope, never widens
-8. **For Scenarios B and C**: keeps the env and reports path, activation command, dep install/restore command, run command, plus generates `environment.yml`
+4. **Presents an env plan** and waits for explicit user confirmation
+5. **Creates env** via `conda create --prefix <path> python=<v> -c conda-forge --override-channels -y` (conda-forge avoids the Anaconda ToS error introduced in 2024+)
+6. **Installs deps with conda first, pip only as fallback** — better binary compatibility on Windows, faithful `environment.yml`
+7. **Runs the script** via the env's Python directly (no activation needed)
+8. **For Scenario A**: deletes ONLY the task's env subfolder afterward — strict scope, never widens
+9. **For Scenarios B and C**: keeps the env and reports path / activation / install / run commands, plus generates `environment.yml`
+
+## How to change paths later
+
+Paths are stored in `~/.config/claude-skills/miniconda-python-env.json`. Three ways to change them:
+
+1. **Ask the AI:** "把 temp env root 改成 E:\PyEnvs" → it'll edit the JSON
+2. **Edit the JSON** with any text editor
+3. **Re-run `setup.ps1 ... -Force`** from the repo (if you installed via Mode B)
+
+Next invocation reads the new values silently.
 
 ## How it triggers
 
@@ -86,28 +107,15 @@ The skill description includes precise NOT-USE cases to avoid false fires (code 
 
 ## Sister skill
 
-For **system-level tool installs** (ffmpeg, 7zip, Miniconda itself, etc.), see **[windows-tools-install-manager](https://github.com/<your-user>/windows-tools-install-manager)** — designed to work alongside this skill.
-
-When Miniconda is missing, this skill chains into windows-tools-install-manager to install it under `<ToolsRoot>\miniconda\`. They share path conventions via the `ToolsRoot` parameter.
+For **system-level tool installs** (ffmpeg, 7zip, Miniconda itself, etc.), see **[windows-tools-install-manager](https://github.com/<your-user>/windows-tools-install-manager)**. When Miniconda is missing, this skill chains into it to install Miniconda under `<TOOLS_ROOT>\miniconda\`. They share path conventions.
 
 ## Requirements
 
 - Windows 10 / 11
 - PowerShell 5+ (built-in)
-- git (to clone the repo)
 - Claude Code and/or Codex installed
-- Miniconda — the skill will offer to install it via the sister skill if missing
-
-## Why this skill exists
-
-Without a convention, AI agents tend to:
-- `pip install` directly into the system Python → pollution, version conflicts
-- Create envs without a cleanup policy → Temp folders fill with abandoned envs
-- Default to pip even when conda-forge has the package → binary compatibility issues on Windows
-- Mix envs into projects randomly (some at project root, some at `~/envs`, some named)
-- Hit Anaconda's new ToS error when running `conda create` without `-c conda-forge`
-
-This skill enforces a predictable, clean Python workflow with three explicit scenarios and per-scenario rules.
+- Miniconda (the skill will offer to install it via the sister skill if missing)
+- git (only for Mode B install)
 
 ## License
 
@@ -115,4 +123,4 @@ This skill enforces a predictable, clean Python workflow with three explicit sce
 
 ## Contributing
 
-Issues and PRs welcome. If you build macOS/Linux support, open a PR with the README updated — happy to link cross-platform forks from here.
+Issues and PRs welcome. If you build macOS/Linux support, open a PR — happy to link cross-platform forks from here.
