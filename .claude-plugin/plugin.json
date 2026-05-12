@@ -1,10 +1,25 @@
 {
   "name": "miniconda-python-env",
   "version": "1.0.0",
-  "description": "Standardize Python execution via Miniconda — every Python task gets its own isolated env, classified as A (temp + auto-cleanup), B (standalone keep + manifest), or C (project-internal). Conda-first dependency installs, no system Python pollution, strict cleanup scope.",
+  "description": "Standardize Python execution via Miniconda envs (A/B/C scenarios + strict cleanup rules + conda-first deps). Self-configuring on first use.",
   "author": {
     "name": "zzy",
     "email": "ziyi.zheng0320@gmail.com"
   },
-  "homepage": ""
+  "homepage": "https://github.com/zzy/miniconda-python-env",
+  "repository": "https://github.com/zzy/miniconda-python-env",
+  "license": "MIT",
+  "keywords": [
+    "windows",
+    "python",
+    "miniconda",
+    "conda",
+    "venv",
+    "env",
+    "isolation",
+    "conda-forge",
+    "skill",
+    "claude-code",
+    "codex"
+  ]
 }
