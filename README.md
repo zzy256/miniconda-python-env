@@ -24,7 +24,7 @@ A Claude Code / Codex skill that **standardizes how AI agents use Python**: ever
 
 **Copy the entire block below (including the `>` quote marks) and paste to your AI:**
 
-> Please install AND configure this skill for me: `https://github.com/zzy/miniconda-python-env`
+> Please install AND configure this skill for me: `https://github.com/zzy256/miniconda-python-env`
 >
 > Steps:
 >
@@ -49,7 +49,7 @@ A Claude Code / Codex skill that **standardizes how AI agents use Python**: ever
 >
 > 6. **Do NOT try to run `setup.ps1`** — it requires interactive stdin that won't work in your session. You're replacing what setup.ps1 does (writing the config + dropping SKILL.md) by doing steps 2 and 3 above.
 >
-> 7. **Recommend** the sister skill `windows-tools-install-manager` for system-level tool installs: `https://github.com/zzy/windows-tools-install-manager` (install it the same way). The two skills cross-reference each other and share the `<TOOLS_ROOT>` path convention.
+> 7. **Recommend** the sister skill `windows-tools-install-manager` for system-level tool installs: `https://github.com/zzy256/windows-tools-install-manager` (install it the same way). The two skills cross-reference each other and share the `<TOOLS_ROOT>` path convention.
 
 After your AI finishes the steps above, **restart your agent**. The skill is installed AND configured — it'll work silently from your first real Python task.
 
@@ -62,7 +62,7 @@ After your AI finishes the steps above, **restart your agent**. The skill is ins
 In Claude Code, type:
 
 ```
-/plugin marketplace add https://github.com/zzy/miniconda-python-env
+/plugin marketplace add https://github.com/zzy256/miniconda-python-env
 /plugin install miniconda-python-env@miniconda-python-env
 ```
 
@@ -80,7 +80,7 @@ Restart Claude Code. The next time you say something like "用 Python 处理 X" 
 Best if you want **zero prompts at first use** — e.g., setting this up via a one-line install script in your own dotfiles repo:
 
 ```powershell
-git clone https://github.com/zzy/miniconda-python-env.git
+git clone https://github.com/zzy256/miniconda-python-env.git
 cd miniconda-python-env
 .\setup.ps1
 ```
@@ -142,7 +142,7 @@ The skill description includes precise NOT-USE cases to avoid false fires (code 
 
 ## Sister skill
 
-For **system-level tool installs** (ffmpeg, 7zip, Miniconda itself, etc.), see **[windows-tools-install-manager](https://github.com/zzy/windows-tools-install-manager)**. When Miniconda is missing, this skill chains into it to install Miniconda under `<TOOLS_ROOT>\miniconda\`. They share path conventions.
+For **system-level tool installs** (ffmpeg, 7zip, Miniconda itself, etc.), see **[windows-tools-install-manager](https://github.com/zzy256/windows-tools-install-manager)**. When Miniconda is missing, this skill chains into it to install Miniconda under `<TOOLS_ROOT>\miniconda\`. They share path conventions.
 
 ## Requirements
 

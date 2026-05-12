@@ -34,4 +34,4 @@ Initial public release.
 ### Notes
 
 - Windows-only by design. macOS/Linux users would need to fork and adapt the PowerShell snippets.
-- Sister skill: [windows-tools-install-manager](https://github.com/zzy/windows-tools-install-manager) for installing Miniconda itself and other system tools.
+- Sister skill: [windows-tools-install-manager](https://github.com/zzy256/windows-tools-install-manager) for installing Miniconda itself and other system tools.
