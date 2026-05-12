@@ -24,32 +24,60 @@ A Claude Code / Codex skill that **standardizes how AI agents use Python**: ever
 
 **Copy the entire block below (including the `>` quote marks) and paste to your AI:**
 
-> Please install AND configure this skill for me: `https://github.com/zzy256/miniconda-python-env`
+> Install and configure the **miniconda-python-env** skill from `https://github.com/zzy256/miniconda-python-env` for me.
 >
-> Steps:
+> Execute these steps **in order**. Do not skip any. Do not assume defaults — ask me when the prompt says to ask.
 >
-> 1. **Fetch** the raw content of `skills/miniconda-python-env/SKILL.md` from the repo's `main` branch (use `raw.githubusercontent.com/zzy/miniconda-python-env/main/skills/miniconda-python-env/SKILL.md`)
+> **Step 1 — Fetch.** Download this file:
+> `https://raw.githubusercontent.com/zzy256/miniconda-python-env/main/skills/miniconda-python-env/SKILL.md`
 >
-> 2. **Save** it to:
->    - `~/.claude/skills/miniconda-python-env/SKILL.md` (for Claude Code)
->    - AND/OR `~/.agents/skills/miniconda-python-env/SKILL.md` (for Codex)
->    - Create parent directories as needed
+> **Step 2 — Save.** Write that file to BOTH paths below (create parent dirs as needed):
+> - Claude Code: `$env:USERPROFILE\.claude\skills\miniconda-python-env\SKILL.md` (Windows) — or `~/.claude/skills/miniconda-python-env/SKILL.md`
+> - Codex: `$env:USERPROFILE\.agents\skills\miniconda-python-env\SKILL.md` (Windows) — or `~/.agents/skills/miniconda-python-env/SKILL.md`
 >
-> 3. **Auto-configure right now** (don't wait for the first natural trigger):
->    Open the SKILL.md you just saved, find the section titled **"Step 0 — Path Configuration"**, then execute its **"Case 2 — Config file MISSING"** branch on my behalf immediately. That means:
->    - Show me the full path explanation from Step 0 (what `<TEMP_ENV_ROOT>` and `<TOOLS_ROOT>` are, where each gets used, examples, defaults)
->    - Wait for my answer (paths, or "OK" for defaults `D:\Projects\Claude\Temp` and `D:\Tools`)
->    - Validate each value looks like an absolute Windows path
->    - Save them to `~/.config/claude-skills/miniconda-python-env.json` in the exact format Step 0 specifies (`{"temp_env_root": "...", "tools_root": "..."}`)
->    - Confirm the config to me
+> **Step 3 — ASK ME these questions NOW. STOP and wait for my reply before proceeding.**
 >
-> 4. **Summarize** what got installed (file paths), what was configured (both paths), and what the skill does in one short paragraph.
+> Word it like this:
 >
-> 5. **Recommend** I restart my agent (Claude Code / Codex) so it picks up the new skill.
+> > "This skill manages Python via Miniconda envs. It needs TWO paths:
+> >
+> > **1. TempEnvRoot — where to put one-off / standalone Python envs.**
+> > Each Python task you give me gets its own env subfolder here (e.g., `<ROOT>\image-ocr-20260512\`).
+> > - Default: `D:\Projects\Claude\Temp`
+> > - Custom example: `D:\PyTemp`, `E:\python-envs`
+> >
+> > **2. ToolsRoot — same root the sister skill `windows-tools-install-manager` uses.**
+> > Only consulted if Miniconda needs to be (re)installed. Most users don't need to think about it.
+> > - Default: `D:\Tools`
+> > - Custom example: `C:\MyTools`
+> >
+> > ⚠️ Neither path is where the skill itself is installed — these are runtime working directories.
+> >
+> > Your answer:
+> > - Reply **`OK`** or **`默认`** to use both defaults
+> > - Or give me your paths, e.g., `TempEnvRoot=D:\PyTemp, ToolsRoot=C:\MyTools` (mix and match, defaults for any you skip)"
 >
-> 6. **Do NOT try to run `setup.ps1`** — it requires interactive stdin that won't work in your session. You're replacing what setup.ps1 does (writing the config + dropping SKILL.md) by doing steps 2 and 3 above.
+> Wait for my reply. **Do not proceed to Step 4 until I have answered.**
 >
-> 7. **Recommend** the sister skill `windows-tools-install-manager` for system-level tool installs: `https://github.com/zzy256/windows-tools-install-manager` (install it the same way). The two skills cross-reference each other and share the `<TOOLS_ROOT>` path convention.
+> **Step 4 — Save my answer to a config file.** Write JSON to this path (create parent dir if needed):
+> - Windows: `$env:USERPROFILE\.config\claude-skills\miniconda-python-env.json`
+> - Mac/Linux: `~/.config/claude-skills/miniconda-python-env.json`
+>
+> Exact content (substitute my answers; defaults are `D:\Projects\Claude\Temp` and `D:\Tools`):
+>
+> ```json
+> {"temp_env_root": "<path1>", "tools_root": "<path2>"}
+> ```
+>
+> Use `\\` for backslashes in JSON. Save as UTF-8.
+>
+> **Step 5 — Verify.** Read back the JSON file you just wrote, paste its contents to me, then say: **"✓ Skill installed and configured. Restart Claude Code / Codex to activate it."**
+>
+> **Step 6 — Recommend** the sister skill: `https://github.com/zzy256/windows-tools-install-manager` (install the same way). The two skills cross-reference each other and share the `ToolsRoot` path convention.
+>
+> ⛔ **DO NOT** run `setup.ps1` — it needs interactive stdin which won't work in your session. Steps 2 + 4 above replace what setup.ps1 does.
+>
+> ⛔ **DO NOT** skip Step 3 or Step 4. If you skip them, the skill triggers a config prompt weeks later when the user has forgotten the context.
 
 After your AI finishes the steps above, **restart your agent**. The skill is installed AND configured — it'll work silently from your first real Python task.
 
