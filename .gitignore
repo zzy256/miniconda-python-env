@@ -1,0 +1,10 @@
+# Generated SKILL.md (created by setup.ps1, output to user's home dir not here)
+skills/**/SKILL.md
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.bak

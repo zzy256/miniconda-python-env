@@ -1,0 +1,9 @@
+{
+  "name": "miniconda-python-env",
+  "version": "1.0.0",
+  "description": "Standardize Python execution via Miniconda — every Python task gets its own isolated env, classified as A (temp + auto-cleanup), B (standalone keep + manifest), or C (project-internal). Conda-first dependency installs, no system Python pollution, strict cleanup scope.",
+  "author": {
+    "name": "ziyi.zheng0320@gmail.com"
+  },
+  "homepage": ""
+}
