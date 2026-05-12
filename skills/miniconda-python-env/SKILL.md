@@ -33,23 +33,56 @@ Use these for every path reference below. Do NOT mention this to the user — it
 
 Tell the user, in ONE clear message:
 
-> 这是 **miniconda-python-env** 第一次启用,需要你确认两个路径(默认值我都列出来,直接回 OK 就用默认):
+> 我是 **miniconda-python-env** skill,第一次启用,需要你帮我设置两个路径。
 >
-> **1. `<TEMP_ENV_ROOT>` — 临时/独立 Python 环境的根目录**
-> 每个一次性脚本或独立 keeper 脚本会在这下面建一个子文件夹(`<task>-<YYYYMMDD>`),用完根据场景决定保留还是删除。
-> - 推荐:`D:\Projects\Claude\Temp`
-> - 也可以:`D:\PyTemp`、`C:\Users\<你>\python-envs`、或其他绝对路径
+> ⚠️ **这两个路径 ≠ skill 自己的安装位置** —— skill 文件已经装好在 `~/.claude/skills/miniconda-python-env/` 里了,不需要你管。
 >
-> **2. `<TOOLS_ROOT>` — 系统工具的根目录(只在 Miniconda 没装时用到)**
-> 如果检测到 Miniconda 没装,我会链到 `windows-tools-install-manager` skill 装,装到 `<TOOLS_ROOT>\miniconda\`。如果你已经装了 Miniconda,这个值实际上用不到,但还是配一个以防以后。
-> - 推荐:`D:\Tools`(跟 `windows-tools-install-manager` 一致)
-> - 也可以:`C:\MyTools`、`D:\Apps` 等
+> **这两个路径 = 以后我帮你管 Python 环境时,环境本身放在哪里。**
 >
-> 你的回答? 可以回 "OK"(都用默认),或 "TempEnvRoot=X" / "ToolsRoot=Y" 单独改一个,或直接告诉我两个路径。我会记到 `~/.config/claude-skills/miniconda-python-env.json`,以后不再问。
+> ---
+>
+> **路径 1: 临时 / 独立 Python 环境的根目录(`<TEMP_ENV_ROOT>`)**
+>
+> 用途:每次你让我跑 Python 任务(数据处理、OCR、画图、爬虫等),我会在这个根目录下建一个 Python 环境的子文件夹,每个任务一个。例如:
+>
+> - 你让我"OCR 一批图片" → 我建 `<TEMP_ENV_ROOT>\image-ocr-20260512\`
+> - 你让我"合并几个 CSV" → 我建 `<TEMP_ENV_ROOT>\csv-merge-20260512\`
+> - 你让我"画个柱状图" → 我建 `<TEMP_ENV_ROOT>\bar-chart-20260512\`
+>
+> 一次性任务完了我会删掉对应子文件夹;你说"以后还要用"的会保留。
+>
+> 推荐默认:**`D:\Projects\Claude\Temp`**
+>
+> ---
+>
+> **路径 2: 系统工具的安装根目录(`<TOOLS_ROOT>`)**
+>
+> 用途:如果检测到 Miniconda 没装,我会调用姊妹 skill `windows-tools-install-manager` 帮你装,装到 `<TOOLS_ROOT>\miniconda\`。如果你已经装了 Miniconda(大部分用户),这个值实际上不会被用到,**但还是配一个以防万一**(比如以后 Miniconda 被删掉重装)。
+>
+> 推荐默认:**`D:\Tools`**(跟 `windows-tools-install-manager` 一致,这样两个 skill 共用一套路径规则)
+>
+> ---
+>
+> **请二选一回复:**
+>
+> **选项 A — 都用默认值**
+> 回复 "OK" 或 "默认",我用 `D:\Projects\Claude\Temp` 和 `D:\Tools`
+>
+> **选项 B — 自定义其中一个或两个**
+> 告诉我你想用的路径,任一种格式都行:
+> - 都改:`TempEnvRoot=D:\PyEnvs, ToolsRoot=C:\MyTools`
+> - 只改一个:`TempEnvRoot=D:\PyEnvs`(另一个用默认)
+> - 或直接两个路径分行/分号写:`D:\PyEnvs ; D:\Tools`
+>
+> 路径必须是绝对 Windows 路径(`<盘符>:\...` 格式)。
+>
+> ---
+>
+> 你回答之后,我会保存到 `~/.config/claude-skills/miniconda-python-env.json`,**以后所有启用都不会再问这个问题**。
 
 Wait for the user's reply. Parse:
-- "OK" / "默认" / empty → use defaults: `D:\Projects\Claude\Temp` and `D:\Tools`
-- Otherwise extract the user's values; validate each looks like an absolute Windows path (`^[A-Za-z]:\\`). Ask again if it doesn't.
+- "OK" / "默认" / 空回复 → use defaults `D:\Projects\Claude\Temp` and `D:\Tools`
+- Otherwise extract user's values; each that's specified must match `^[A-Za-z]:\\`. Unspecified ones fall back to defaults. Re-ask if any value is ambiguous or invalid.
 
 Save:
 
