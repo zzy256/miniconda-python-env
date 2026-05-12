@@ -6,51 +6,23 @@ A Claude Code / Codex skill that **standardizes how AI agents use Python**: ever
 
 ---
 
-## 🚀 Install — pick one of three modes
+## 🚀 Install — 三种模式,挑一个
 
-The skill is **self-configuring on first use**: whichever mode you pick, the first time the skill runs it'll ask you for two paths (or read a pre-filled config). Choose the mode that matches your style.
+| Mode | 一句话 | 适合谁 | 要碰终端吗? |
+|---|---|---|---|
+| **⭐ 1. AI 自动安装(推荐)** | 把一段 prompt 丢给 AI,它把 skill 拉下来、放对位置、问你两个路径、保存 config,全自动 | 任何人,尤其不想动终端的小白 | **不用** |
+| **2. `/plugin install`** | Claude Code 自带的 marketplace 流程 | 已经熟悉 `/plugin` 命令的人 | 不用 |
+| **3. `git clone` + `setup.ps1`** | 克隆仓库 + 跑一次脚本,装之前先把路径写好 | 想脚本化 / 一行命令搞定 / CI 安装的 power user | 是 |
 
-### Mode A — Claude Code `/plugin install` (Recommended for most users)
+> 三种模式装到的 **SKILL.md 是同一个**,共用 `~/.config/claude-skills/miniconda-python-env.json` 这一份配置。任选其一。
 
-In Claude Code:
+---
 
-```
-/plugin marketplace add https://github.com/zzy/miniconda-python-env
-/plugin install miniconda-python-env@miniconda-python-env
-```
+### ⭐ Mode 1 — Ask an AI to install + configure it for you (RECOMMENDED)
 
-Restart Claude Code. The next time you say something like "用 Python 处理 X" or "install pandas", the skill will:
-1. Ask you ONCE for two paths (with clear explanations of what each is for)
-2. Save your answers to `~/.config/claude-skills/miniconda-python-env.json`
-3. Proceed with the task — and from then on, never ask again
+**Why this is the easiest:** you don't open a terminal, you don't read docs about plugin commands, you don't even need to know what "skill" means. You just paste a prompt to any AI with file-write access (Claude Code, Codex, ChatGPT with file tools, etc.) — and the AI does everything: fetches the skill file, drops it in the right place, asks you the two path questions with full context, saves your answers.
 
-### Mode B — Pre-configure with `setup.ps1` (Power user)
-
-If you want to set paths BEFORE the first trigger (zero prompts at first use):
-
-```powershell
-git clone https://github.com/zzy/miniconda-python-env.git
-cd miniconda-python-env
-.\setup.ps1
-```
-
-`setup.ps1` will:
-1. Ask you for TWO paths (with detailed explanations):
-   - **TempEnvRoot** — where temp/standalone Python envs (Scenarios A & B) live
-   - **ToolsRoot** — same root the sister skill uses for system tools; only used if Miniconda gets installed
-2. Write `~/.config/claude-skills/miniconda-python-env.json` for you
-3. Copy `SKILL.md` into both `~/.claude/skills/...` and `~/.agents/skills/...`
-
-After this, the first trigger will silently read the config and proceed.
-
-Non-interactive form:
-```powershell
-.\setup.ps1 -TempEnvRoot "D:\PyTemp" -ToolsRoot "D:\Tools" -Agent claude -Force
-```
-
-### Mode C — Ask an AI to install + configure it for you (most turnkey)
-
-Paste this entire instruction to an AI agent (Claude Code, Codex, or any AI with file-write access):
+**Copy the entire block below (including the `>` quote marks) and paste to your AI:**
 
 > Please install AND configure this skill for me: `https://github.com/zzy/miniconda-python-env`
 >
@@ -77,11 +49,55 @@ Paste this entire instruction to an AI agent (Claude Code, Codex, or any AI with
 >
 > 6. **Do NOT try to run `setup.ps1`** — it requires interactive stdin that won't work in your session. You're replacing what setup.ps1 does (writing the config + dropping SKILL.md) by doing steps 2 and 3 above.
 >
-> 7. **Recommend** the sister skill `windows-tools-install-manager` for system-level tool installs: `https://github.com/zzy/windows-tools-install-manager` (install it the same Mode C way). The two skills cross-reference each other and share the `<TOOLS_ROOT>` path convention.
+> 7. **Recommend** the sister skill `windows-tools-install-manager` for system-level tool installs: `https://github.com/zzy/windows-tools-install-manager` (install it the same way). The two skills cross-reference each other and share the `<TOOLS_ROOT>` path convention.
 
-After your AI finishes these steps, restart your agent. The skill is installed AND configured — it'll work silently from the first real use.
+After your AI finishes the steps above, **restart your agent**. The skill is installed AND configured — it'll work silently from your first real Python task.
 
-> 💡 **If your AI doesn't have file-write access** (e.g., a pure chat AI without tools), use Mode A or B instead.
+> 💡 If your AI doesn't have file-write access (e.g., a pure chat-only AI), fall back to Mode 2 or Mode 3 below.
+
+---
+
+### Mode 2 — Claude Code `/plugin install`
+
+In Claude Code, type:
+
+```
+/plugin marketplace add https://github.com/zzy/miniconda-python-env
+/plugin install miniconda-python-env@miniconda-python-env
+```
+
+Restart Claude Code. The next time you say something like "用 Python 处理 X" or "install pandas", the skill will:
+1. Ask you ONCE for two paths (with full explanations — see Step 0 in `SKILL.md`)
+2. Save your answers to `~/.config/claude-skills/miniconda-python-env.json`
+3. Proceed with the task — and from then on, never ask again
+
+> Difference vs. Mode 1: here the path-config question fires at the first real Python task. In Mode 1, the AI proactively asks you right after install. Functionally identical, just different timing.
+
+---
+
+### Mode 3 — `git clone` + `setup.ps1` (power user / scripted install)
+
+Best if you want **zero prompts at first use** — e.g., setting this up via a one-line install script in your own dotfiles repo:
+
+```powershell
+git clone https://github.com/zzy/miniconda-python-env.git
+cd miniconda-python-env
+.\setup.ps1
+```
+
+`setup.ps1` will:
+1. Ask for two paths (with detailed explanations in PowerShell):
+   - **TempEnvRoot** — where temp/standalone Python envs (Scenarios A & B) live
+   - **ToolsRoot** — same root the sister skill uses; only used if Miniconda gets installed
+2. Write `~/.config/claude-skills/miniconda-python-env.json` for you
+3. Copy `SKILL.md` into both `~/.claude/skills/...` and `~/.agents/skills/...`
+
+After this, the skill is installed AND pre-configured — the first natural trigger reads the config silently, no prompt.
+
+Non-interactive form (for scripts / CI):
+```powershell
+.\setup.ps1 -TempEnvRoot "D:\PyTemp" -ToolsRoot "D:\Tools" -Agent claude -Force
+```
 
 ---
 
