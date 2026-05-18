@@ -5,6 +5,20 @@ All notable changes to `miniconda-python-env` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] — 2026-05-18
+
+Critical bug-fix release. v1.0.0 was unusable on Codex due to two issues:
+
+### Fixed
+
+- **SKILL.md YAML frontmatter `description` field now uses a folded block scalar (`>-`).** v1.0.0 had a long single-line `description:` value containing literal `:` characters (e.g., `HARD exclusion (overrides positive triggers above): do NOT use`). Strict YAML parsers (including Codex's) rejected this with `mapping values are not allowed in this context at line 2 column 519`. Claude Code's lenient parser tolerated it, which is why it slipped past pre-release testing. Folded block scalar treats the entire value as opaque text, so internal colons are safe.
+- **Skill install directory for Codex corrected from `~/.agents/skills/` to `~/.codex/skills/`.** v1.0.0's README, Mode 1 prompt, and `setup.ps1` all pointed installs at the wrong path. Codex actually loads skills from `~/.codex/skills/`. All references updated.
+
+### Notes
+
+- If you installed v1.0.0 via Codex, your `~/.codex/skills/miniconda-python-env/SKILL.md` needs to be re-fetched from `main`. Easiest: paste the Mode 1 prompt again, or just overwrite the file from the latest raw URL.
+- v1.0.0 Claude Code installs continue to work — Claude Code's parser tolerated the invalid YAML. But re-fetching v1.0.1 is still recommended for cleanliness.
+
 ## [1.0.0] — 2026-05-12
 
 Initial public release.

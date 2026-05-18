@@ -35,7 +35,7 @@ A Claude Code / Codex skill that **standardizes how AI agents use Python**: ever
 >
 > **Step 2 — Save.** Write that file to BOTH paths below (create parent dirs as needed):
 > - Claude Code: `$env:USERPROFILE\.claude\skills\miniconda-python-env\SKILL.md` (Windows) — or `~/.claude/skills/miniconda-python-env/SKILL.md`
-> - Codex: `$env:USERPROFILE\.agents\skills\miniconda-python-env\SKILL.md` (Windows) — or `~/.agents/skills/miniconda-python-env/SKILL.md`
+> - Codex: `$env:USERPROFILE\.codex\skills\miniconda-python-env\SKILL.md` (Windows) — or `~/.codex/skills/miniconda-python-env/SKILL.md`
 >
 > **Step 3 — ASK ME these questions NOW. STOP and wait for my reply before proceeding.**
 >
@@ -120,7 +120,7 @@ cd miniconda-python-env
    - **TempEnvRoot** — where temp/standalone Python envs (Scenarios A & B) live
    - **ToolsRoot** — same root the sister skill uses; only used if Miniconda gets installed
 2. Write `~/.config/claude-skills/miniconda-python-env.json` for you
-3. Copy `SKILL.md` into both `~/.claude/skills/...` and `~/.agents/skills/...`
+3. Copy `SKILL.md` into both `~/.claude/skills/...` and `~/.codex/skills/...`
 
 After this, the skill is installed AND pre-configured — the first natural trigger reads the config silently, no prompt.
 

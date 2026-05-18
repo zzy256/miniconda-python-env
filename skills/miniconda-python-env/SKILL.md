@@ -1,6 +1,20 @@
 ---
 name: miniconda-python-env
-description: Use when the user wants to RUN Python code, INSTALL a third-party Python package, or execute a .py / .ipynb file on this machine — explicit ("用 Python 处理", "pip install X", "装个 numpy", "跑这个 notebook", "run this script") OR implicit (PDF text extraction, OCR, data conversion, JSON↔CSV/Excel, plotting, scraping, ML training / inference, batch automation natural in Python). Uses Miniconda envs (temp env root D:\Projects\Claude\Temp\, user-configurable). HARD exclusion (overrides positive triggers above): do NOT use when user has their own activated venv OR project uses poetry/uv/pipenv/pyenv-win/Anaconda — use THEIR env even for "pip install X". Also do NOT use for: code reading ("看下 main.py"), concept questions ("what is X", "explain Y", "学 X"), tech comparisons ("Python vs Rust", "conda vs pip", "Anaconda vs Miniconda"), Python version/env info ("python 版本怎么看"), or env cleanup/uninstall ("删 conda 环境"). If Miniconda missing, chain into windows-tools-install-manager.
+description: >-
+  Use when the user wants to RUN Python code, INSTALL a third-party Python
+  package, or execute a .py / .ipynb file on this machine — explicit ("用
+  Python 处理", "pip install X", "装个 numpy", "跑这个 notebook", "run this
+  script") OR implicit (PDF text extraction, OCR, data conversion,
+  JSON↔CSV/Excel, plotting, scraping, ML training / inference, batch
+  automation natural in Python). Uses Miniconda envs (temp env root
+  D:\Projects\Claude\Temp\, user-configurable). HARD exclusion (overrides
+  positive triggers above) — do NOT use when user has their own activated venv
+  OR project uses poetry/uv/pipenv/pyenv-win/Anaconda; use THEIR env even for
+  "pip install X". Also do NOT use for — code reading ("看下 main.py"); concept
+  questions ("what is X", "explain Y", "学 X"); tech comparisons ("Python vs
+  Rust", "conda vs pip", "Anaconda vs Miniconda"); Python version/env info
+  ("python 版本怎么看"); or env cleanup/uninstall ("删 conda 环境"). If
+  Miniconda missing, chain into windows-tools-install-manager.
 ---
 
 # Miniconda-Managed Python Environments

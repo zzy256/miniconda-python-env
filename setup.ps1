@@ -215,7 +215,7 @@ if ($Agent -in @('claude', 'both')) {
 if ($Agent -in @('codex', 'both')) {
     $targets += [PSCustomObject]@{
         Agent = 'Codex'
-        Path  = Join-Path $env:USERPROFILE '.agents\skills\miniconda-python-env'
+        Path  = Join-Path $env:USERPROFILE '.codex\skills\miniconda-python-env'
     }
 }
 
