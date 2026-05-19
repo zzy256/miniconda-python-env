@@ -5,6 +5,13 @@ All notable changes to `miniconda-python-env` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.4] — 2026-05-19
+
+### Changed
+
+- Broadened the AI installer quickstart so any equivalent request to install, add, set up, enable, configure, or use the skill from the repository URL is treated as a Mode 1 AI install request.
+- Added Chinese and English example phrasings for one-line AI installs, including `给我安装这个 skill`, `帮我装一下这个 Codex skill`, `install this skill`, `set up this Claude/Codex skill`, and `enable this skill from`.
+
 ## [1.0.3] — 2026-05-19
 
 ### Added
