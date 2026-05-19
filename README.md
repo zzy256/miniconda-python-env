@@ -115,6 +115,12 @@ cd miniconda-python-env
 .\setup.ps1
 ```
 
+If Windows PowerShell blocks script execution on your machine, run the same script with a one-time execution-policy bypass:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\setup.ps1
+```
+
 `setup.ps1` will:
 1. Ask for two paths (with detailed explanations in PowerShell):
    - **TempEnvRoot** — where temp/standalone Python envs (Scenarios A & B) live
@@ -158,7 +164,7 @@ Paths are stored in `~/.config/claude-skills/miniconda-python-env.json`. Three w
 
 1. **Ask the AI:** "把 temp env root 改成 E:\PyEnvs" → it'll edit the JSON
 2. **Edit the JSON** with any text editor
-3. **Re-run `setup.ps1 ... -Force`** from the repo (if you installed via Mode B)
+3. **Re-run `setup.ps1 ... -Force`** from the repo (if you installed via Mode 3)
 
 Next invocation reads the new values silently.
 
@@ -180,7 +186,7 @@ For **system-level tool installs** (ffmpeg, 7zip, Miniconda itself, etc.), see *
 - PowerShell 5+ (built-in)
 - Claude Code and/or Codex installed
 - Miniconda (the skill will offer to install it via the sister skill if missing)
-- git (only for Mode B install)
+- git (only for Mode 3 install)
 
 ## License
 

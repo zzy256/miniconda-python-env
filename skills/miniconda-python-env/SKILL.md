@@ -10,11 +10,12 @@ description: >-
   D:\Projects\Claude\Temp\, user-configurable). HARD exclusion (overrides
   positive triggers above) — do NOT use when user has their own activated venv
   OR project uses poetry/uv/pipenv/pyenv-win/Anaconda; use THEIR env even for
-  "pip install X". Also do NOT use for — code reading ("看下 main.py"); concept
-  questions ("what is X", "explain Y", "学 X"); tech comparisons ("Python vs
-  Rust", "conda vs pip", "Anaconda vs Miniconda"); Python version/env info
-  ("python 版本怎么看"); or env cleanup/uninstall ("删 conda 环境"). If
-  Miniconda missing, chain into windows-tools-install-manager.
+  "pip install X". If only Anaconda is found globally, ask before reusing it or
+  installing Miniconda. Also do NOT use for — code reading ("看下 main.py");
+  concept questions ("what is X", "explain Y", "学 X"); tech comparisons
+  ("Python vs Rust", "conda vs pip", "Anaconda vs Miniconda"); Python
+  version/env info ("python 版本怎么看"); or env cleanup/uninstall ("删 conda 环境").
+  If Miniconda missing, chain into windows-tools-install-manager.
 ---
 
 # Miniconda-Managed Python Environments
@@ -162,11 +163,33 @@ In this case, pause before any install, present the env plan, then proceed.
 ### 1. Detect Miniconda availability
 
 ```powershell
-Get-Command conda -ErrorAction SilentlyContinue
+$PreferredConda = Join-Path $ToolsRoot 'miniconda\Scripts\conda.exe'
+$CondaExe = $null
+
+if (Test-Path $PreferredConda) {
+    $CondaExe = $PreferredConda
+}
+else {
+    $cmd = Get-Command conda -ErrorAction SilentlyContinue
+    if ($cmd) { $CondaExe = $cmd.Source }
+}
 ```
 
-- **Found** → continue with step 2
-- **Not found** → invoke the `windows-tools-install-manager` skill. Propose installing Miniconda to `<TOOLS_ROOT>\miniconda\` (silent install with `/InstallationType=JustMe /AddToPath=1 /S /D=<TOOLS_ROOT>\miniconda`). After install, re-check.
+- **Preferred Miniconda found at `<TOOLS_ROOT>\miniconda\Scripts\conda.exe`** → use that full path as `$CondaExe` for every conda command below.
+- **Only another `conda` is found on PATH** → inspect it before use:
+  ```powershell
+  $info = & $CondaExe info --json | ConvertFrom-Json
+  $root = [string]$info.root_prefix
+  ```
+  - If `$root` clearly points to Miniconda, continue with `$CondaExe`.
+  - If `$root` points to Anaconda and this is an Anaconda-managed project, respect the project and use that env/toolchain.
+  - If `$root` points to Anaconda but the user did not ask to use Anaconda, stop and ask: use existing Anaconda for this task, or install separate Miniconda under `<TOOLS_ROOT>\miniconda\`?
+- **No conda found** → invoke the `windows-tools-install-manager` skill. Propose installing Miniconda to `<TOOLS_ROOT>\miniconda\` (silent install with `/InstallationType=JustMe /AddToPath=1 /S /D=<TOOLS_ROOT>\miniconda`). After install, do not rely on PATH in the current shell; set:
+  ```powershell
+  $CondaExe = Join-Path $ToolsRoot 'miniconda\Scripts\conda.exe'
+  & $CondaExe --version
+  ```
+  If that full-path check fails, report the install problem instead of continuing.
 
 ### 2. Classify the scenario (A / B / C)
 
@@ -231,7 +254,7 @@ Wait for explicit confirmation. The user can correct any field, including the A/
 Always use `--prefix` (path-based env), never `--name`. Always pass `-c conda-forge --override-channels` — Anaconda's default channels now require explicit ToS acceptance (as of 2024+) and will error out; conda-forge avoids this.
 
 ```powershell
-conda create --prefix "<env-path>" python=<version> -c conda-forge --override-channels -y
+& $CondaExe create --prefix "<env-path>" python=<version> -c conda-forge --override-channels -y
 ```
 
 ### 7. Install dependencies — **conda first, pip only as fallback**
@@ -245,7 +268,7 @@ conda create --prefix "<env-path>" python=<version> -c conda-forge --override-ch
 
 ```powershell
 # Step A — try conda first (always with conda-forge to avoid Anaconda ToS):
-conda install --prefix "<env-path>" -c conda-forge --override-channels <packages> -y
+& $CondaExe install --prefix "<env-path>" -c conda-forge --override-channels <packages> -y
 
 # Step B — ONLY if a package isn't on conda-forge, fall back to pip via the env's Python:
 & "<env-path>\python.exe" -m pip install <packages>
@@ -266,7 +289,19 @@ Use the env's interpreter directly:
 After task completion, delete ONLY the env directory:
 
 ```powershell
-Remove-Item -Recurse -Force "$TempEnvRoot\<env-name>"
+$envPath = Join-Path $TempEnvRoot '<env-name>'
+$rootFull = [System.IO.Path]::GetFullPath($TempEnvRoot).TrimEnd('\') + '\'
+$envFull = [System.IO.Path]::GetFullPath($envPath).TrimEnd('\') + '\'
+$leaf = Split-Path -Leaf $envFull.TrimEnd('\')
+
+if (-not $envFull.StartsWith($rootFull, [System.StringComparison]::OrdinalIgnoreCase)) {
+    throw "Refusing cleanup outside TEMP_ENV_ROOT: $envFull"
+}
+if ($leaf -ne '<env-name>') {
+    throw "Refusing cleanup because env name check failed: $leaf"
+}
+
+Remove-Item -LiteralPath $envFull -Recurse -Force
 ```
 
 **Strict scope — never widen:**
@@ -289,11 +324,11 @@ After task completion, tell the user:
 Python 环境已创建并保留:
 - 路径:<full path>
 - 用途:<one-line description>
-- 激活:conda activate "<env-path>"
+- 激活:conda activate "<env-path>" (in a new shell where conda is on PATH)
    或不激活直接调用:& "<env-path>\python.exe" ...
-- 安装新依赖(首选 conda):conda install --prefix "<env-path>" -c conda-forge --override-channels <pkg>
+- 安装新依赖(首选 conda):& "<conda-exe>" install --prefix "<env-path>" -c conda-forge --override-channels <pkg>
 - 安装新依赖(conda-forge 没有时再用 pip):& "<env-path>\python.exe" -m pip install <pkg>
-- 从依赖文件恢复:conda env update --prefix "<env-path>" -f environment.yml
+- 从依赖文件恢复:& "<conda-exe>" env update --prefix "<env-path>" -f environment.yml
 - 运行脚本:& "<env-path>\python.exe" path\to\script.py
 - 依赖说明文件:environment.yml 在 <path>
 ```
@@ -301,7 +336,7 @@ Python 环境已创建并保留:
 Always generate `environment.yml` for B and C:
 
 ```powershell
-conda env export --prefix "<env-path>" --no-builds > "<manifest-path>\environment.yml"
+& $CondaExe env export --prefix "<env-path>" --no-builds > "<manifest-path>\environment.yml"
 ```
 
 - B: put it alongside the script
@@ -379,6 +414,6 @@ The user can change the configured paths any time by:
 
 1. **Asking you (the AI):** "把 temp env root 改成 E:\PyEnvs" → you edit `~/.config/claude-skills/miniconda-python-env.json`
 2. **Editing the JSON file directly** with any text editor
-3. **Re-running `setup.ps1 ... -Force`** from the plugin's git repo (if installed via Mode B)
+3. **Re-running `setup.ps1 ... -Force`** from the plugin's git repo (if installed via Mode 3)
 
 Next invocation reads the new values silently.

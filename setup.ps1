@@ -2,7 +2,7 @@
 
 <#
 .SYNOPSIS
-[Mode B install] Pre-configure paths AND copy the skill to your agent.
+[Mode 3 install] Pre-configure paths AND copy the skill to your agent.
 
 .DESCRIPTION
 This is the "power user" install path. It does TWO things:
@@ -11,8 +11,8 @@ This is the "power user" install path. It does TWO things:
      ...so the skill won't prompt you for paths on first use.
   2. Copies the skill's SKILL.md into your agent's skills directory.
 
-If you'd rather have the skill ask you on first trigger (Mode A or C), you
-don't need this script — just install the plugin via `/plugin install` or
+If you'd rather have the skill ask you on first trigger (Mode 1 or Mode 2), you
+don't need this script - just install the plugin via `/plugin install` or
 have an AI drop SKILL.md for you. See README.md.
 
 .PARAMETER TempEnvRoot
@@ -49,10 +49,14 @@ param(
 $ErrorActionPreference = 'Stop'
 
 # ----- AI-agent / non-interactive guard -----
-# If stdin is redirected (AI tool call context) AND neither path parameter was
-# passed, Read-Host silently returns empty and the script falls back to defaults
-# — meaning the user never gets asked. Refuse to proceed in that case.
-if ([string]::IsNullOrWhiteSpace($TempEnvRoot) -and [string]::IsNullOrWhiteSpace($ToolsRoot) -and [System.Console]::IsInputRedirected) {
+# If stdin is redirected (AI tool call context) AND any required path parameter
+# is missing, Read-Host silently returns empty and the script falls back to a
+# default - meaning the user never gets asked. Refuse to proceed in that case.
+$missingRequiredPaths = @()
+if ([string]::IsNullOrWhiteSpace($TempEnvRoot)) { $missingRequiredPaths += '-TempEnvRoot' }
+if ([string]::IsNullOrWhiteSpace($ToolsRoot)) { $missingRequiredPaths += '-ToolsRoot' }
+
+if ($missingRequiredPaths.Count -gt 0 -and [System.Console]::IsInputRedirected) {
     Write-Host ""
     Write-Host "==================================================================" -ForegroundColor Red
     Write-Host "  setup.ps1 cannot run interactively here (stdin is redirected)." -ForegroundColor Red
@@ -60,15 +64,17 @@ if ([string]::IsNullOrWhiteSpace($TempEnvRoot) -and [string]::IsNullOrWhiteSpace
     Write-Host ""
     Write-Host "You appear to be running setup.ps1 inside an AI agent's tool call"
     Write-Host "(Codex, Claude Code's Bash, etc.). The script's interactive Read-Host"
-    Write-Host "prompts WILL NOT reach the human user — they'll silently return empty"
+    Write-Host "prompts WILL NOT reach the human user - they'll silently return empty"
     Write-Host "and the script will use defaults without asking. That's a UX bug."
     Write-Host ""
+    Write-Host "Missing required path parameter(s): $($missingRequiredPaths -join ', ')" -ForegroundColor Yellow
+    Write-Host ""
     Write-Host "If you are an AI agent installing this skill for a user:" -ForegroundColor Yellow
-    Write-Host "  Use Mode 1 in the README instead — fetch SKILL.md directly via"
+    Write-Host "  Use Mode 1 in the README instead - fetch SKILL.md directly via"
     Write-Host "  raw.githubusercontent.com, ASK the user for TempEnvRoot + ToolsRoot,"
     Write-Host "  then write the config JSON file at"
     Write-Host "  ~/.config/claude-skills/miniconda-python-env.json"
-    Write-Host "  (full prompt template in README's '⭐ Mode 1' section)."
+    Write-Host "  (full prompt template in README's 'Mode 1' section)."
     Write-Host ""
     Write-Host "If you are a human running this from a real terminal:" -ForegroundColor Yellow
     Write-Host "  Either invoke from an interactive PowerShell (no piping/redirect),"
@@ -81,7 +87,7 @@ if ([string]::IsNullOrWhiteSpace($TempEnvRoot) -and [string]::IsNullOrWhiteSpace
 # ----- Banner -----
 Write-Host ""
 Write-Host "==================================================================" -ForegroundColor Cyan
-Write-Host "  miniconda-python-env  — Mode B install (pre-config)" -ForegroundColor Cyan
+Write-Host "  miniconda-python-env  - Mode 3 install (pre-config)" -ForegroundColor Cyan
 Write-Host "==================================================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "This skill standardizes how your AI agent uses Python: every Python"
@@ -92,7 +98,7 @@ Write-Host "  A. Temp script         - env auto-deleted after task"
 Write-Host "  B. Standalone keeper   - env kept + environment.yml generated"
 Write-Host "  C. Formal project      - env lives inside the project root"
 Write-Host ""
-Write-Host "Mode B (this script) lets you set the paths upfront, so the skill"
+Write-Host "Mode 3 (this script) lets you set the paths upfront, so the skill"
 Write-Host "won't ask the first time you use it." -ForegroundColor Yellow
 Write-Host ""
 
@@ -137,7 +143,7 @@ if ($TempEnvRoot -notmatch '^[A-Za-z]:\\') {
 }
 
 Write-Host ""
-Write-Host "  ✓ TempEnvRoot = $TempEnvRoot" -ForegroundColor Green
+Write-Host "  [OK] TempEnvRoot = $TempEnvRoot" -ForegroundColor Green
 Write-Host ""
 
 # ----- Prompt: ToolsRoot -----
@@ -153,7 +159,7 @@ if ([string]::IsNullOrWhiteSpace($ToolsRoot)) {
     Write-Host ""
     Write-Host "  Should match the InstallRoot used by windows-tools-install-manager."
     Write-Host "  If Miniconda is already installed (most users), this value is"
-    Write-Host "  unused at runtime — but worth setting in case Miniconda gets"
+    Write-Host "  unused at runtime - but worth setting in case Miniconda gets"
     Write-Host "  uninstalled later."
     Write-Host ""
     Write-Host "  Common choices:"
@@ -174,7 +180,7 @@ if ($ToolsRoot -notmatch '^[A-Za-z]:\\') {
 }
 
 Write-Host ""
-Write-Host "  ✓ ToolsRoot = $ToolsRoot" -ForegroundColor Green
+Write-Host "  [OK] ToolsRoot = $ToolsRoot" -ForegroundColor Green
 Write-Host ""
 
 # ----- Step 1: write config file -----
@@ -194,14 +200,14 @@ if ((Test-Path $cfgPath) -and -not $Force) {
         New-Item -ItemType Directory -Path $cfgDir -Force | Out-Null
         @{ temp_env_root = $TempEnvRoot; tools_root = $ToolsRoot } |
             ConvertTo-Json | Set-Content -Path $cfgPath -Encoding UTF8
-        Write-Host "  ✓ Wrote config: $cfgPath" -ForegroundColor Green
+        Write-Host "  [OK] Wrote config: $cfgPath" -ForegroundColor Green
     }
 }
 else {
     New-Item -ItemType Directory -Path $cfgDir -Force | Out-Null
     @{ temp_env_root = $TempEnvRoot; tools_root = $ToolsRoot } |
         ConvertTo-Json | Set-Content -Path $cfgPath -Encoding UTF8
-    Write-Host "  ✓ Wrote config: $cfgPath" -ForegroundColor Green
+    Write-Host "  [OK] Wrote config: $cfgPath" -ForegroundColor Green
 }
 
 # ----- Step 2: copy SKILL.md to agent skill dirs -----
@@ -234,7 +240,7 @@ foreach ($target in $targets) {
 
     New-Item -ItemType Directory -Path $target.Path -Force | Out-Null
     Copy-Item -Path $skillSource -Destination $outFile -Force
-    Write-Host "  ✓ [$($target.Agent)] $outFile" -ForegroundColor Green
+    Write-Host "  [OK] [$($target.Agent)] $outFile" -ForegroundColor Green
 }
 
 # ----- Summary -----
@@ -245,12 +251,12 @@ Write-Host "==================================================================" 
 Write-Host ""
 Write-Host "  Next steps:" -ForegroundColor Yellow
 Write-Host "    1. Restart Claude Code / Codex (close and reopen)"
-Write-Host "    2. Try saying:  '用 Python 处理这个 CSV'  or  'install pandas'"
+Write-Host "    2. Try saying:  'process this CSV with Python'  or  'install pandas'"
 Write-Host "       The skill should activate, read the config, and propose"
 Write-Host "       an env plan WITHOUT asking you for paths."
 Write-Host ""
 Write-Host "  Sister skill recommendation:" -ForegroundColor Yellow
-Write-Host "    Install 'windows-tools-install-manager' too — this skill chains"
+Write-Host "    Install 'windows-tools-install-manager' too - this skill chains"
 Write-Host "    into it when Miniconda is missing."
 Write-Host ""
 Write-Host "  To change paths later:" -ForegroundColor DarkGray

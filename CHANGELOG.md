@@ -5,6 +5,18 @@ All notable changes to `miniconda-python-env` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] — 2026-05-18
+
+### Fixed
+
+- Strengthened the `setup.ps1` non-interactive guard: redirected sessions now fail if either required path parameter is missing, preventing partial-parameter silent defaults.
+- Replaced ambiguous lettered mode wording with the public Mode 1/2/3 terminology.
+- Added a README fallback command for Windows PowerShell execution-policy blocks.
+- Clarified Miniconda detection so global Anaconda is not silently treated as managed Miniconda.
+- Documented full-path `conda.exe` use after chained Miniconda install, because PATH updates do not affect the current shell.
+- Replaced the Scenario A cleanup snippet with a child-path validation guard before `Remove-Item`.
+- Switched `setup.ps1` status output to ASCII to avoid mojibake in Windows PowerShell 5.
+
 ## [1.0.1] — 2026-05-18
 
 Critical bug-fix release. v1.0.0 was unusable on Codex due to two issues:
@@ -17,7 +29,7 @@ Critical bug-fix release. v1.0.0 was unusable on Codex due to two issues:
 ### Notes
 
 - If you installed v1.0.0 via Codex, your `~/.codex/skills/miniconda-python-env/SKILL.md` needs to be re-fetched from `main`. Easiest: paste the Mode 1 prompt again, or just overwrite the file from the latest raw URL.
-- v1.0.0 Claude Code installs continue to work — Claude Code's parser tolerated the invalid YAML. But re-fetching v1.0.1 is still recommended for cleanliness.
+- v1.0.0 Claude Code installs continue to work — Claude Code's parser tolerated the invalid YAML. But re-fetching the latest release is still recommended for cleanliness.
 
 ## [1.0.0] — 2026-05-12
 
