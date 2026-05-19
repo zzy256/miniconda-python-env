@@ -5,6 +5,13 @@ All notable changes to `miniconda-python-env` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] — 2026-05-19
+
+### Added
+
+- Added a top-level **AI INSTALLER QUICKSTART** so users can give an AI the one-line request `请帮我安装这个 skill: https://github.com/zzy256/miniconda-python-env` and still get the full install + immediate path-configuration flow.
+- Added verification coverage for the quickstart contract, including raw `SKILL.md` URL, Claude Code and Codex target paths, config JSON path, immediate user prompt, and the `setup.ps1` prohibition for AI tool-call installs.
+
 ## [1.0.2] — 2026-05-18
 
 ### Fixed

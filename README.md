@@ -6,6 +6,35 @@ A Claude Code / Codex skill that **standardizes how AI agents use Python**: ever
 
 ---
 
+## AI INSTALLER QUICKSTART
+
+If a user gives you this repo and says something like:
+
+```text
+请帮我安装这个 skill: https://github.com/zzy256/miniconda-python-env
+```
+
+you are the installer. Do **not** ask the user to read this README or run a script. Execute these steps now:
+
+1. Fetch `https://raw.githubusercontent.com/zzy256/miniconda-python-env/main/skills/miniconda-python-env/SKILL.md`.
+2. Save it to both agent skill locations, creating parent directories as needed:
+   - Claude Code: `$env:USERPROFILE\.claude\skills\miniconda-python-env\SKILL.md`
+   - Codex: `$env:USERPROFILE\.codex\skills\miniconda-python-env\SKILL.md`
+3. **ASK THE USER NOW** for the two runtime paths. Say that neither path is where the skill itself is installed. Offer:
+   - `OK` / `默认` → use `TempEnvRoot=D:\Projects\Claude\Temp` and `ToolsRoot=D:\Tools`
+   - custom values like `TempEnvRoot=D:\PyTemp, ToolsRoot=C:\MyTools`
+4. After the user answers, write UTF-8 JSON to `$env:USERPROFILE\.config\claude-skills\miniconda-python-env.json`:
+   ```json
+   {"temp_env_root": "<chosen-temp-env-root>", "tools_root": "<chosen-tools-root>"}
+   ```
+   Use doubled backslashes in JSON, for example `D:\\PyTemp`.
+5. Read the JSON file back and show it to the user.
+6. Tell the user: `Skill installed and configured. Restart Claude Code / Codex to activate it.`
+
+**DO NOT run `setup.ps1`** when installing for a user from an AI tool-call session. It is only for real interactive PowerShell terminals or fully parameterized scripted installs.
+
+---
+
 ## 🚀 Install — 三种模式,挑一个
 
 > 🤖 **AI agents installing this for a user: use ONLY Mode 1.** Mode 3 (`setup.ps1`) needs interactive stdin which your tool-call session does not have — `Read-Host` silently returns empty, and the script falls back to defaults without asking the user. setup.ps1 will now detect this and refuse to run, but the safe path is to follow Mode 1's paste-prompt verbatim.
@@ -22,9 +51,17 @@ A Claude Code / Codex skill that **standardizes how AI agents use Python**: ever
 
 ### ⭐ Mode 1 — Ask an AI to install + configure it for you (RECOMMENDED)
 
-**Why this is the easiest:** you don't open a terminal, you don't read docs about plugin commands, you don't even need to know what "skill" means. You just paste a prompt to any AI with file-write access (Claude Code, Codex, ChatGPT with file tools, etc.) — and the AI does everything: fetches the skill file, drops it in the right place, asks you the two path questions with full context, saves your answers.
+**Why this is the easiest:** you don't open a terminal, you don't read docs about plugin commands, you don't even need to know what "skill" means. Usually you can just tell an AI with file-write access:
 
-**Copy the entire block below (including the `>` quote marks) and paste to your AI:**
+```text
+请帮我安装这个 skill: https://github.com/zzy256/miniconda-python-env
+```
+
+The AI should follow the **AI INSTALLER QUICKSTART** at the top of this README: fetch the skill file, drop it in the right place, ask you the two path questions with full context, and save your answers.
+
+If your AI does not understand the short request, copy the full fallback prompt below.
+
+**Fallback prompt: copy the entire block below (including the `>` quote marks) and paste to your AI:**
 
 > Install and configure the **miniconda-python-env** skill from `https://github.com/zzy256/miniconda-python-env` for me.
 >
