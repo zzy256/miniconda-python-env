@@ -5,6 +5,12 @@ All notable changes to `miniconda-python-env` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.5] — 2026-05-30
+
+### Fixed
+
+- Codex refused to load the skill with a "description exceeds 1024" error. The YAML `description` was 1062 characters but **1108 UTF-8 bytes** — over Codex's **1024-byte** limit (the many multi-byte Chinese trigger phrases pushed the byte total past the cap even though the character count was close). Rewrote the description to 586 characters / 596 bytes while preserving the same trigger and exclusion coverage, so the skill now loads in both Claude Code and Codex.
+
 ## [1.0.4] — 2026-05-19
 
 ### Changed
