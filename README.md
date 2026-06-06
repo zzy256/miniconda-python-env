@@ -193,14 +193,15 @@ When the user (or the AI agent, mid-task) needs Python:
    |---|---|---|---|
    | **A — Temp** | One-off task, no project, no reuse | `<TEMP_ENV_ROOT>\<task>-<YYYYMMDD>\` | Deleted after task |
    | **B — Standalone** | Keep & re-run script, not part of a project | `<TEMP_ENV_ROOT>\<task>-<YYYYMMDD>\` | Kept + `environment.yml` |
-   | **C — Project** | Python plays an ongoing role in a project | `<project-root>\.conda\` | Kept inside project + `environment.yml` |
+   | **C — Project** | Python plays an ongoing role in a project (incl. PyQt/PySide/Tkinter/Django/Flask/FastAPI/CLI/library) | `<project-root>\.conda\` | Kept inside project + `environment.yml`, reused across sessions & subagents |
 
-4. **Presents an env plan** and waits for explicit user confirmation
-5. **Creates env** via `conda create --prefix <path> python=<v> -c conda-forge --override-channels -y` (conda-forge avoids the Anaconda ToS error introduced in 2024+)
-6. **Installs deps with conda first, pip only as fallback** — better binary compatibility on Windows, faithful `environment.yml`
-7. **Runs the script** via the env's Python directly (no activation needed)
-8. **For Scenario A**: deletes ONLY the task's env subfolder afterward — strict scope, never widens
-9. **For Scenarios B and C**: keeps the env and reports path / activation / install / run commands, plus generates `environment.yml`
+4. **Detects an existing env to reuse** (Step 2.5) — an existing `<project>\.conda`, a `.venv`/`venv`, a lock-file toolchain, or the interpreter already in use. If one exists, it's reused and steps 5–6 are skipped (no duplicate env, no plan prompt)
+5. **Presents an env plan** and waits for explicit user confirmation — only when creating a NEW env
+6. **Creates env** via `conda create --prefix <path> python=<v> -c conda-forge --override-channels -y` (conda-forge avoids the Anaconda ToS error introduced in 2024+)
+7. **Installs deps with conda first, pip only as fallback** — better binary compatibility on Windows, faithful `environment.yml`
+8. **Runs the script** via the env's Python directly (no activation needed)
+9. **For Scenario A**: deletes ONLY the task's env subfolder afterward — strict scope, never widens (a reused env is never deleted)
+10. **For Scenarios B and C**: keeps the env and reports path / activation / install / run commands, plus generates `environment.yml`
 
 ## How to change paths later
 
@@ -217,8 +218,13 @@ Next invocation reads the new values silently.
 Once installed, the skill activates whenever:
 - You explicitly ask for Python: "用 Python 处理 X", "pip install Y", "装个 numpy"
 - The AI agent notices mid-task that Python is the natural tool (PDF text extraction, OCR, JSON↔CSV/Excel conversion, plotting, scraping, ML inference, batch automation)
+- You're **building or developing a Python project** — a PyQt/PySide/Tkinter desktop app, a Django/Flask/FastAPI backend, a CLI or library. The skill is meant to engage at **project start**, set up one env at `<project>\.conda`, and reuse it for every later run, test, and `pytest` — rather than waiting until test time and risking a duplicate env.
 
-The skill description includes precise NOT-USE cases to avoid false fires (code reading, concept questions, technology discussions, projects already using poetry/uv/pipenv, user-managed venvs).
+The skill description includes precise NOT-USE cases to avoid false fires (code reading, concept questions, technology discussions, projects already using poetry/uv/pipenv, user-managed venvs, and any project that already has a usable interpreter — `.venv`/`venv` or an existing `.conda` — which it reuses instead of duplicating).
+
+### Reuse, not recreate (and subagents)
+
+The skill creates an env **once** and reuses it. Before any `conda create` it checks for an env it should reuse (the project's `.conda`, a `.venv`/`venv`, a lock-file toolchain, or the interpreter already in use). It also has explicit rules for dispatched subagents: the **main** session owns env creation and passes the interpreter path into the subagent's task prompt; a **subagent** running tests reuses that env (or the one it detects) and never spins up its own — if none exists, it reports back instead of creating one. This is what prevents the "a test subagent tried to build a fresh Miniconda env mid-project" failure.
 
 ## Sister skill
 

@@ -1,14 +1,20 @@
 ---
 name: miniconda-python-env
 description: >-
-  Use when the user wants to run Python code, install a third-party Python
-  package, or execute a .py/.ipynb file on this Windows machine: "用 Python
-  处理", "pip install X", "装个 numpy", "run this script", PDF/OCR/data
-  conversion/JSON/CSV/Excel/plotting/scraping/ML/batch automation. Do NOT use
-  when the user has an activated venv or the project uses poetry/uv/pipenv/
-  pyenv-win/Anaconda; use that environment instead. Do NOT use for code reading,
-  concept questions, tech comparisons, Python version lookups, or deleting envs.
-  If Miniconda is missing, chain into windows-tools-install-manager.
+  ANY Python work on Windows starts with setting up its conda env - use this
+  skill FIRST, before writing/running code. It places/keeps the env by task
+  type: temp one-offs (deleted) vs in-project keepers (<project>\.conda, reused).
+  Triggers: running/installing Python ("用 Python 处理", "pip install X", "run
+  this script"); implicit one-offs (PDF/OCR, CSV/Excel, automation); and
+  ESPECIALLY developing a Python project - whether the user names a stack ("PyQt6
+  桌面工具", Django/Flask/FastAPI/PyTorch) or gives only a goal and you pick
+  Python (ML/DL, data, web/API, crawler, desktop/GUI). REUSE an existing env,
+  never recreate. Do NOT use when a usable project env exists (activated venv,
+  .venv/venv, poetry/uv/pipenv/pdm lock, or a conda/Anaconda env the project
+  uses): reuse THAT even for "pip install X"; if Anaconda only global, ask
+  first. Do NOT use for non-Python goals (JS/mobile/static), code reading,
+  concepts, comparisons, versions, deleting envs. Missing Miniconda - chain
+  into windows-tools-install-manager.
 ---
 
 # Miniconda-Managed Python Environments
@@ -113,19 +119,21 @@ Then continue with the rest of this skill.
 
 When Python or pip is needed on this Windows machine:
 
-1. **Always use Miniconda** to create an isolated env — never install into system Python.
-2. **Classify the task** as one of:
+1. **Reuse before you create.** Before doing anything else, check whether a usable env already exists for this work (see Step 2.5). An env this skill already built for the project, an existing `.conda`, a `.venv`/`venv`, an interpreter the current work has been using, or a lock-file toolchain (poetry/uv/pipenv/pdm/pyenv-win) all mean **reuse that env — do not build a second one.** Creating a duplicate env mid-project is the single most common failure of this skill; it produces "why is it making a new environment?" surprises and breaks already-working code.
+2. **Always use Miniconda** when you DO need a new env — never install into system Python.
+3. **Engage early for projects.** For a Python project (Scenario C), the right moment to create the env is at **project start / first dependency**, not at test time. If you build the project structure first and only reach for an env when a test needs to run, you've already missed the window — and a later run/test (often in a subagent) will be tempted to "fix" the missing env by creating one. Set the env up once, up front, then reuse it for every run, test, and `pytest` for the life of the project.
+4. **Classify the task** as one of:
    - **A. Temp mid-task script** — one-off processing / conversion / analysis; not a deliverable. Env deleted after task.
    - **B. Standalone long-lived script** — user wants to keep and re-run, but not part of a formal project. Env kept.
-   - **C. Formal / long-lived project** — Python is used (any role) in a project that's maintained over time. Env kept inside the project.
-3. **Env path by scenario:**
+   - **C. Formal / long-lived project** — Python is used (any role) in a project that's maintained over time, including GUI/desktop apps (PyQt/PySide/Tkinter), web backends (Django/Flask/FastAPI), CLIs, and libraries. Env kept inside the project and reused across all sessions and subagents.
+5. **Env path by scenario:**
    - **C**: `<project-root>\.conda\`
    - **A and B**: `<TEMP_ENV_ROOT>\<env-name>\` (Step 0 loads `<TEMP_ENV_ROOT>`)
-4. **If `<TEMP_ENV_ROOT>\` does NOT exist** → stop and ask user before creating. Only create that single missing directory after confirmation; don't touch anything else.
-5. **If Miniconda is NOT installed** → invoke the `windows-tools-install-manager` skill (propose `<TOOLS_ROOT>\miniconda\`) before continuing.
-6. **Present the env plan and wait for explicit confirmation** before creating.
-7. **Cleanup for Scenario A**: after task completion, MUST delete ONLY `<TEMP_ENV_ROOT>\<env-name>\`. Never delete the Temp root, the parent directory, or any unrelated path.
-8. **Kept envs (B / C)**: at task end, report path, activation command, dependency install/restore command, run command, purpose, and whether `requirements.txt` / `environment.yml` was generated.
+6. **If `<TEMP_ENV_ROOT>\` does NOT exist** → stop and ask user before creating. Only create that single missing directory after confirmation; don't touch anything else.
+7. **If Miniconda is NOT installed** → invoke the `windows-tools-install-manager` skill (propose `<TOOLS_ROOT>\miniconda\`) before continuing.
+8. **Present the env plan and wait for explicit confirmation** before creating a NEW env. Reusing an env that already exists needs no confirmation — just use it (and say which one, in one line).
+9. **Cleanup for Scenario A**: after task completion, MUST delete ONLY `<TEMP_ENV_ROOT>\<env-name>\`. Never delete the Temp root, the parent directory, or any unrelated path. Never delete a Scenario B or C env, and never delete an env you merely reused rather than created.
+10. **Kept envs (B / C)**: at task end, report path, activation command, dependency install/restore command, run command, purpose, and whether `requirements.txt` / `environment.yml` was generated.
 
 ## When to Use
 
@@ -146,10 +154,24 @@ User's task didn't mention Python but it's the natural tool:
 
 In this case, pause before any install, present the env plan, then proceed.
 
-### Do NOT use when
+### Scenario C — The user states a GOAL and YOU choose Python
+
+This is the most-missed trigger. Real requests usually name an outcome, not a stack — the user rarely says "用 PyQt 做界面 / 用 PyTorch 训个网络 / 用 Flask 写后端". They say what they want, and you pick the technology. The moment you decide the implementation will be Python, you are starting a Python project — set up the env BEFORE you scaffold or write the first file.
+
+- "做一个能识别发票关键信息的小工具" → you choose Python + an OCR/ML stack → Scenario C
+- "训练一个能区分猫狗的模型" → you choose Python + PyTorch → Scenario C
+- "做个爬虫,把某网站的商品价格抓下来出个报表" → you choose Python + requests/scrapy + pandas → Scenario C
+- "写个后端 API 管理我的书单" → if you choose Python (FastAPI/Flask/Django) → Scenario C; if you choose a non-Python stack, this skill does not apply
+
+Domains where Python is the usual choice: ML/DL, data processing/analysis, scientific computing, scraping, automation/scripting, backend APIs, desktop/GUI tooling. Engage the moment Python is decided — don't wait until a test needs to run. If the goal clearly implies a non-Python stack (a mobile app, a static marketing site, a React frontend), do **not** use this skill.
+
+### Do NOT use when (or: reuse, don't recreate)
 - User is already in an active env they set up themselves — just use their env
 - Project already has a non-conda Python toolchain established (`poetry.lock`, `uv.lock`, `Pipfile.lock`, `pdm.lock`) — respect existing tooling
+- Project already has a usable interpreter that the work has been using — a `.venv`/`venv` directory, an existing `<project>\.conda`, a `requirements.txt` the project installs against, or simply the Python the earlier part of this session has been running. **Reuse it.** This is the case that bites multi-task projects and dispatched test subagents: the project is mid-build on one interpreter, then a "run the tests" step decides it needs a fresh Miniconda env. It does not — use the interpreter the project is already on.
 - Pure standard-library Python with no third-party imports AND no expected reuse
+
+When the project's existing interpreter is system Python or a bare venv and you think it *should* be a conda env, do not silently switch it mid-project — surface the mismatch to the user and let them decide. Migrating an in-flight project to conda is a deliberate choice, not something to do behind a "run the tests" task.
 
 ## Required Steps
 
@@ -198,6 +220,33 @@ Apply these signals in order — first match wins:
 
 **Important on C:** The project does NOT need to be a pure Python project. A React app that needs a Python build helper, a docs project with a Python lint script, a data pipeline mixing Python and SQL — all qualify as C.
 
+### 2.5 Detect an existing usable env — REUSE before you create
+
+This step is what stops the skill from building a second environment on top of one that already works. Run it before Step 3 for **every** invocation, and especially before any run/test step.
+
+Look, in this order, for an env this work should reuse:
+
+```powershell
+# (a) An env this skill already built for this project:
+Test-Path "<project-root>\.conda\python.exe"
+# (b) A non-conda project venv:
+Test-Path "<project-root>\.venv\Scripts\python.exe"
+Test-Path "<project-root>\venv\Scripts\python.exe"
+# (c) A lock-file / managed toolchain at the project root:
+#     poetry.lock | uv.lock | Pipfile.lock | pdm.lock | environment.yml
+```
+
+Decision:
+
+- **(a) `<project>\.conda` exists** → reuse it. Skip Steps 3–6 (creation and the confirmation plan). Go straight to install/run using `"<project-root>\.conda\python.exe"`. If a dependency is missing, install it INTO this env, don't make a new one.
+- **(b) a `.venv`/`venv` exists, or the current session has already been running some interpreter for this project** → that is the project's environment. Use it. Do not create a conda env unless the user explicitly asks to migrate the project to conda.
+- **(c) a lock-file toolchain is present** → respect it (poetry/uv/pipenv/pdm). This skill stands down; use their tooling.
+- **Nothing found** → this is a genuinely new env. Continue to Step 3.
+
+For Scenario A/B, the equivalent check is: does `<TEMP_ENV_ROOT>\<env-name>\` already exist from an earlier run of the same task? If yes and it's healthy, reuse it instead of recreating.
+
+> The whole point: an env is created **once** and then **reused**. If you're about to run `conda create` and an interpreter for this project already exists, stop — you're about to cause the "why did it make a new environment?" problem.
+
 ### 3. Decide env name and path
 
 **A or B (non-project):**
@@ -226,6 +275,8 @@ Test-Path $TempEnvRoot
 
 ### 5. Present the env plan + wait for confirmation
 
+Only when Step 2.5 found nothing to reuse. If you're reusing an existing env, skip this and just state which env you're using in one line.
+
 ```
 计划创建 Python 环境:
 - 类别:A 临时 / B 独立脚本 / C 正式项目  ← 我判断为 X
@@ -242,7 +293,9 @@ Test-Path $TempEnvRoot
 
 Wait for explicit confirmation. The user can correct any field, including the A/B/C classification.
 
-### 6. Create the env
+### 6. Create the env — only if Step 2.5 found nothing to reuse
+
+If Step 2.5 found a reusable env, you are not here — you're installing into / running against that env. Reach this step only for a genuinely new env.
 
 Always use `--prefix` (path-based env), never `--name`. Always pass `-c conda-forge --override-channels` — Anaconda's default channels now require explicit ToS acceptance (as of 2024+) and will error out; conda-forge avoids this.
 
@@ -335,6 +388,25 @@ Always generate `environment.yml` for B and C:
 - B: put it alongside the script
 - C: put it at project root (or update existing one)
 
+## Running inside a subagent / non-interactive task
+
+This section exists because the most damaging failure mode of this skill happens here. A main agent building a project dispatches a subagent to "run the tests." That subagent loads this skill, sees a project, classifies it **C**, and — with no memory of which interpreter the project has been using and no way to ask the user — starts creating a fresh `<project>\.conda`. The main agent then has to abort it. The fix is a clear division of labor:
+
+**If you are the MAIN agent dispatching a subagent that will run or test Python:**
+
+- Resolve the environment **before** you dispatch. Run Step 2.5; if the project has no env yet and one is warranted, create it now (with the user's confirmation) so it exists before any subagent needs it.
+- Pass the interpreter into the subagent's task prompt explicitly, e.g.:
+  > Use this exact Python interpreter for all runs and tests: `D:\Proj\myapp\.conda\python.exe`. Do NOT create, modify, or look for another environment. If it is missing or a package is absent, stop and report back — do not build an env.
+- This keeps env decisions in the one place that has the user and the full context: you.
+
+**If you ARE the subagent (you were dispatched with a specific task):**
+
+- **Never create a new env, and never ask for confirmation** — you can't, and it's not your call. Your job is to run the task in the environment that already exists.
+- Use the interpreter path you were handed. If you weren't handed one, detect the project's existing env via Step 2.5 (`<project>\.conda`, `.venv`, `venv`) and use that.
+- If you find **no** usable env, do **not** create one. Stop and report back to the main agent: "No project Python env found at `<paths checked>`; need an env before I can run the tests." Let the main agent decide.
+
+The rule of thumb: **environments are created by the main, interactive session — never spun up by a dispatched task as a side effect of running tests.**
+
 ## Red Flags — STOP and re-check
 
 | Rationalization | Reality |
@@ -348,13 +420,18 @@ Always generate `environment.yml` for B and C:
 | "Miniconda 没装,装个系统 Python 也行" | NO — chain into windows-tools-install-manager. |
 | "项目里有 poetry.lock 但我更习惯 conda" | Respect the project's existing toolchain. |
 | "我把整个 `<TEMP_ENV_ROOT>\` 都清一下,反正都是临时的" | Strict scope: only THIS task's env. |
+| "项目已经在用某个 python,但我跑测试还是建个 conda env 干净点" | NO — run Step 2.5 and REUSE the project's existing interpreter. A new env mid-project breaks working code and surprises the user. Migrating to conda is a separate, explicit decision. |
+| "我是被派来跑测试的子代理,顺手把环境建了" | Subagents never create envs. Use the interpreter you were given (or detect the existing one); if none, report back to the main agent. |
+| "项目要新建了,先把代码写完,环境等跑测试再说" | Create the project env at the START. Deferring it to test time is exactly what triggers the duplicate-env failure. |
 
 ## Common Mistakes
 
 | Mistake | Fix |
 |---|---|
 | Skipping Step 0 (using hardcoded path) | Always run Step 0 first — that's how `<TEMP_ENV_ROOT>` and `<TOOLS_ROOT>` get resolved |
-| Skipping the plan / confirmation step | Always present plan first, even for "tiny" scripts |
+| Skipping the plan / confirmation step when creating a NEW env | Always present plan first, even for "tiny" scripts (reuse of an existing env needs no plan) |
+| Creating a new env when one already exists for the project | Run Step 2.5 first; reuse `<project>\.conda` / `.venv` / `venv` / the in-use interpreter |
+| A dispatched subagent spinning up its own env to run tests | Subagents reuse the handed/detected env or report back — they never create |
 | Using `conda create -n <name>` (named env) | Use `--prefix "<path>"` so the env lives where you intend |
 | Defaulting to `pip install` when conda-forge has the package | Always try `conda install -c conda-forge --override-channels` first; pip only as fallback |
 | Forgetting `-c conda-forge --override-channels` on conda commands | Anaconda's defaults hit ToS errors as of 2024+ |
@@ -388,18 +465,31 @@ User: "在这个 React 项目里加个数据预处理脚本,构建时跑"
 1. Step 0 → silently load config
 2. Detect Miniconda → ✓
 3. Classify → C (in a project repo, script reused on every build)
-4. Env: `<project-root>\.conda\`, Python 3.12
-5. Plan to user → user OK
-6. Create env, install deps, write script
-7. `conda env export` → `<repo>\environment.yml`
-8. Report path, activation, install / run commands
+4. Step 2.5 → no `.conda` / `.venv` yet → genuinely new
+5. Env: `<project-root>\.conda\`, Python 3.12
+6. Plan to user → user OK
+7. Create env, install deps, write script
+8. `conda env export` → `<repo>\environment.yml`
+9. Report path, activation, install / run commands
+
+### Example 3: Scenario C lifecycle (PyQt app over many tasks, with test subagents)
+
+User: "帮我做一个 PyQt 桌面应用,功能逐步加" — a large project built task by task.
+
+1. **At project start** (first dependency, before writing much code): Step 0 → detect Miniconda → classify **C** → Step 2.5 finds no env → present plan → create `<project>\.conda` with `python=3.12` + PyQt6 from conda-forge. This is the project's one and only env.
+2. **Each feature task** that needs to run or import code uses `& "<project>\.conda\python.exe" ...`. Step 2.5 finds `.conda` and reuses it — no new env, no confirmation prompt.
+3. **Dispatching a test subagent** after a task: the MAIN agent passes the interpreter in the task prompt — "run pytest with `<project>\.conda\python.exe`; do not create or look for another env." The subagent runs the tests in that env and never tries to build one. (See "Running inside a subagent".)
+4. New dependency for a later feature → `conda install --prefix "<project>\.conda" -c conda-forge ...` into the SAME env; refresh `environment.yml`.
+
+The env is born once at step 1 and reused for the entire life of the project — including every test run.
 
 ## Exclusions
 
 - Project already uses poetry / uv / pipenv / pdm → respect the existing toolchain
+- Project already has a usable interpreter (`.venv`/`venv`, an existing `.conda`, or one the session has been using) → reuse it; do not create a second env
 - Pure non-Python projects with zero Python touchpoints → no env needed
 - Standalone stdlib-only one-liners → just run with whatever Python is available
-- This skill only manages envs it itself creates
+- This skill manages envs it itself creates, but it must still DETECT and REUSE pre-existing project envs rather than duplicating them
 
 ## How to Change `<TEMP_ENV_ROOT>` or `<TOOLS_ROOT>` Later
 

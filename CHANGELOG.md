@@ -5,6 +5,28 @@ All notable changes to `miniconda-python-env` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] — 2026-06-06
+
+Lifecycle, reuse, and subagent fixes. Addresses two real-world failures on a
+large PyQt project: (1) the skill never engaged while the project was being
+built, so the project ended up on a non-conda Python; and (2) a dispatched
+"run the tests" subagent then tried to create a fresh Miniconda env for what
+should have been an ordinary test run, and had to be aborted by the main agent.
+
+### Added
+
+- **Step 2.5 "Detect an existing usable env — REUSE before you create."** Before any `conda create`, the skill now checks for an env it should reuse — an existing `<project>\.conda`, a `.venv`/`venv`, a lock-file toolchain, or the interpreter the session has already been using — and reuses it (skipping the creation + confirmation steps) instead of building a duplicate.
+- **"Running inside a subagent / non-interactive task" section.** Establishes a division of labor: the main interactive session resolves/creates the env and passes the interpreter path into the subagent's prompt; a dispatched subagent **never** creates an env or asks for confirmation — it reuses the handed/detected env, or stops and reports back if none exists.
+- **Scenario C lifecycle example** (Example 3): a PyQt app built task-by-task, env created once at project start and reused for every later run/test, including by test subagents.
+
+### Changed
+
+- **Description now covers Python *project development*, not just one-off run/install** — while preserving the A/B/C scenario model (it still states that env location & retention depend on task type: temp one-offs deleted vs in-project keepers at `<project>\.conda`). It triggers on developing a Python project across domains (ML/DL, data, web/API, crawler, automation, desktop/GUI) **whether the user names the stack** ("PyQt6 桌面工具", Django/Flask/FastAPI/PyTorch) **or states only a goal and the AI picks Python**, and instructs setting up the env FIRST then reusing it. Added an explicit "do NOT use for non-Python goals (JS/mobile/static sites)" guard so the broadened triggers don't over-fire. (Kept under the 1024-byte Codex limit: 1022 bytes.)
+- **Disambiguated the Anaconda exclusion.** "Project uses Anaconda" was being read as "Anaconda is installed on the machine, so skip this skill entirely." The exclusion now only applies when the project is *configured* to use a conda/Anaconda env (existing env / lock / configured interpreter); if Anaconda is merely installed globally, ask first.
+- **Broadened the "use their env" exclusion** to include bare `.venv`/`venv` directories, `requirements.txt`-only projects, and any interpreter the current work has already been using — not just lock files and activated venvs.
+- **Core Rules** now lead with "reuse before you create" and "engage early for projects"; the plan/confirmation and cleanup rules clarify they apply to newly created envs, never to a reused one.
+- Added matching Red Flags / Common Mistakes entries for duplicate-env creation, subagent-spawned envs, and deferring project env creation to test time.
+
 ## [1.0.5] — 2026-05-30
 
 ### Fixed
