@@ -1,0 +1,20 @@
+{
+  "name": "miniconda-python-env",
+  "interface": {
+    "displayName": "Miniconda Python Env"
+  },
+  "plugins": [
+    {
+      "name": "miniconda-python-env",
+      "source": {
+        "source": "local",
+        "path": "./plugins/miniconda-python-env"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

@@ -74,12 +74,14 @@ If your AI does not understand the short request, copy the full fallback prompt 
 >
 > Execute these steps **in order**. Do not skip any. Do not assume defaults — ask me when the prompt says to ask.
 >
-> **Step 1 — Fetch.** Download this file:
+> **Step 1 — Fetch.** Download these files:
 > `https://raw.githubusercontent.com/zzy256/miniconda-python-env/main/skills/miniconda-python-env/SKILL.md`
+> `https://raw.githubusercontent.com/zzy256/miniconda-python-env/main/skills/miniconda-python-env/agents/openai.yaml`
 >
-> **Step 2 — Save.** Write that file to BOTH paths below (create parent dirs as needed):
+> **Step 2 — Save.** Preserve their relative paths under BOTH skill directories below (create parent dirs as needed):
 > - Claude Code: `$env:USERPROFILE\.claude\skills\miniconda-python-env\SKILL.md` (Windows) — or `~/.claude/skills/miniconda-python-env/SKILL.md`
 > - Codex: `$env:USERPROFILE\.codex\skills\miniconda-python-env\SKILL.md` (Windows) — or `~/.codex/skills/miniconda-python-env/SKILL.md`
+> - Save the metadata file as `agents\openai.yaml` beside each installed `SKILL.md`.
 >
 > **Step 3 — ASK ME these questions NOW. STOP and wait for my reply before proceeding.**
 >
@@ -140,6 +142,17 @@ In Claude Code, type:
 /plugin install miniconda-python-env@miniconda-python-env
 ```
 
+### Codex plugin marketplace
+
+Install this plugin independently from its own GitHub repository:
+
+```powershell
+codex plugin marketplace add zzy256/miniconda-python-env --ref main
+codex plugin add miniconda-python-env@miniconda-python-env
+```
+
+Start a new Codex task after installation. Maintainers should run `./sync-codex-plugin.ps1` before committing a release so the marketplace snapshot matches the source skill.
+
 Restart Claude Code. The next time you say something like "用 Python 处理 X" or "install pandas", the skill will:
 1. Ask you ONCE for two paths (with full explanations — see Step 0 in `SKILL.md`)
 2. Save your answers to `~/.config/claude-skills/miniconda-python-env.json`
@@ -170,7 +183,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\setup.ps1
    - **TempEnvRoot** — where temp/standalone Python envs (Scenarios A & B) live
    - **ToolsRoot** — same root the sister skill uses; only used if Miniconda gets installed
 2. Write `~/.config/claude-skills/miniconda-python-env.json` for you
-3. Copy `SKILL.md` into both `~/.claude/skills/...` and `~/.codex/skills/...`
+3. Copy the complete skill directory, including Codex UI metadata, into both `~/.claude/skills/...` and `~/.codex/skills/...`
 
 After this, the skill is installed AND pre-configured — the first natural trigger reads the config silently, no prompt.
 

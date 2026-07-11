@@ -1,0 +1,7 @@
+interface:
+  display_name: "Miniconda Python Env"
+  short_description: "Manage isolated Python environments on Windows"
+  default_prompt: "Use $miniconda-python-env to prepare an isolated environment for this Python task."
+
+policy:
+  allow_implicit_invocation: true

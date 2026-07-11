@@ -9,11 +9,11 @@ This is the "power user" install path. It does TWO things:
   1. Pre-fills the skill's config file at:
      $env:USERPROFILE\.config\claude-skills\miniconda-python-env.json
      ...so the skill won't prompt you for paths on first use.
-  2. Copies the skill's SKILL.md into your agent's skills directory.
+  2. Copies the complete skill directory into your agent's skills directory.
 
 If you'd rather have the skill ask you on first trigger (Mode 1 or Mode 2), you
 don't need this script - just install the plugin via `/plugin install` or
-have an AI drop SKILL.md for you. See README.md.
+have an AI install the skill files for you. See README.md.
 
 .PARAMETER TempEnvRoot
 Where temp/standalone Python envs live. Default: D:\Projects\Claude\Temp.
@@ -26,7 +26,7 @@ if Miniconda needs to be installed. Default: D:\Tools.
 'claude' / 'codex' / 'both'. Default: both.
 
 .PARAMETER Force
-Overwrite existing SKILL.md and config without asking.
+Overwrite existing skill files and config without asking.
 
 .EXAMPLE
 .\setup.ps1
@@ -47,6 +47,19 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+
+function Normalize-AbsoluteWindowsPath {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    $candidate = $Path.Trim()
+    if ($candidate -notmatch '^[A-Za-z]:\\') {
+        throw "'$Path' must be an absolute Windows path such as C:\Tools or C:\."
+    }
+
+    $full = [System.IO.Path]::GetFullPath($candidate)
+    if ($full -match '^[A-Za-z]:\\$') { return $full }
+    return $full.TrimEnd('\', '/')
+}
 
 # ----- AI-agent / non-interactive guard -----
 # If stdin is redirected (AI tool call context) AND any required path parameter
@@ -104,7 +117,8 @@ Write-Host ""
 
 # ----- Locate skill file -----
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$skillSource = Join-Path $scriptDir 'skills\miniconda-python-env\SKILL.md'
+$skillSourceDir = Join-Path $scriptDir 'skills\miniconda-python-env'
+$skillSource = Join-Path $skillSourceDir 'SKILL.md'
 
 if (-not (Test-Path $skillSource)) {
     Write-Error "SKILL.md not found at: $skillSource`nAre you running setup.ps1 from the cloned repo root?"
@@ -135,12 +149,7 @@ if ([string]::IsNullOrWhiteSpace($TempEnvRoot)) {
     $TempEnvRoot = if ([string]::IsNullOrWhiteSpace($userInput)) { $default } else { $userInput.Trim() }
 }
 
-$TempEnvRoot = $TempEnvRoot.TrimEnd('\', '/')
-if ($TempEnvRoot -notmatch '^[A-Za-z]:\\') {
-    Write-Warning "'$TempEnvRoot' doesn't look like an absolute Windows path."
-    $confirm = Read-Host "  Use it anyway? [y/N]"
-    if ($confirm -ne 'y' -and $confirm -ne 'Y') { exit 1 }
-}
+$TempEnvRoot = Normalize-AbsoluteWindowsPath $TempEnvRoot
 
 Write-Host ""
 Write-Host "  [OK] TempEnvRoot = $TempEnvRoot" -ForegroundColor Green
@@ -172,12 +181,7 @@ if ([string]::IsNullOrWhiteSpace($ToolsRoot)) {
     $ToolsRoot = if ([string]::IsNullOrWhiteSpace($userInput)) { $default } else { $userInput.Trim() }
 }
 
-$ToolsRoot = $ToolsRoot.TrimEnd('\', '/')
-if ($ToolsRoot -notmatch '^[A-Za-z]:\\') {
-    Write-Warning "'$ToolsRoot' doesn't look like an absolute Windows path."
-    $confirm = Read-Host "  Use it anyway? [y/N]"
-    if ($confirm -ne 'y' -and $confirm -ne 'Y') { exit 1 }
-}
+$ToolsRoot = Normalize-AbsoluteWindowsPath $ToolsRoot
 
 Write-Host ""
 Write-Host "  [OK] ToolsRoot = $ToolsRoot" -ForegroundColor Green
@@ -210,7 +214,7 @@ else {
     Write-Host "  [OK] Wrote config: $cfgPath" -ForegroundColor Green
 }
 
-# ----- Step 2: copy SKILL.md to agent skill dirs -----
+# ----- Step 2: copy the complete skill directory to agent skill dirs -----
 $targets = @()
 if ($Agent -in @('claude', 'both')) {
     $targets += [PSCustomObject]@{
@@ -239,7 +243,7 @@ foreach ($target in $targets) {
     }
 
     New-Item -ItemType Directory -Path $target.Path -Force | Out-Null
-    Copy-Item -Path $skillSource -Destination $outFile -Force
+    Get-ChildItem -LiteralPath $skillSourceDir -Force | Copy-Item -Destination $target.Path -Recurse -Force
     Write-Host "  [OK] [$($target.Agent)] $outFile" -ForegroundColor Green
 }
 

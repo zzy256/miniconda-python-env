@@ -1,6 +1,6 @@
 {
   "name": "miniconda-python-env",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Standardize Python execution via Miniconda envs (A/B/C scenarios + strict cleanup rules + conda-first deps). Self-configuring on first use.",
   "author": {
     "name": "zzy",

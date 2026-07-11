@@ -5,6 +5,18 @@ All notable changes to `miniconda-python-env` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] — 2026-07-11
+
+### Fixed
+
+- Preserve drive-root paths such as `C:\` instead of converting them to drive-relative `C:` paths.
+- Write exported `environment.yml` files explicitly as UTF-8 and remove machine-specific `prefix:` entries.
+
+### Added
+
+- Add Codex `agents/openai.yaml` interface metadata for plugin discovery and starter prompts.
+- Install the complete skill directory so UI metadata is retained by `setup.ps1` installs.
+
 ## [1.1.0] — 2026-06-06
 
 Lifecycle, reuse, and subagent fixes. Addresses two real-world failures on a

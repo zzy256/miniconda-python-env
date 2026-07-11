@@ -49,6 +49,8 @@ function Get-Frontmatter {
 $readme = Join-Path $RepoRoot 'README.md'
 $changelog = Join-Path $RepoRoot 'CHANGELOG.md'
 $skill = Join-Path $RepoRoot 'skills\miniconda-python-env\SKILL.md'
+$openaiYaml = Join-Path $RepoRoot 'skills\miniconda-python-env\agents\openai.yaml'
+$codexMarketplace = Join-Path $RepoRoot '.agents\plugins\marketplace.json'
 $setup = Join-Path $RepoRoot 'setup.ps1'
 $codexPlugin = Join-Path $RepoRoot '.codex-plugin\plugin.json'
 $claudePlugin = Join-Path $RepoRoot '.claude-plugin\plugin.json'
@@ -56,6 +58,16 @@ $claudeMarketplace = Join-Path $RepoRoot '.claude-plugin\marketplace.json'
 
 $yaml = Get-Frontmatter $skill
 Assert-True ($yaml -match 'description:\s*>-') 'SKILL.md description must use folded scalar frontmatter.'
+Assert-True (Test-Path -LiteralPath $openaiYaml) 'Codex agents/openai.yaml metadata is missing.'
+Assert-TextPresent $openaiYaml '\$miniconda-python-env' 'openai.yaml default_prompt must explicitly mention the skill.'
+$market = Get-Content -LiteralPath $codexMarketplace -Raw -Encoding UTF8 | ConvertFrom-Json
+Assert-True ($market.plugins.Count -eq 1) 'Codex marketplace must contain exactly one independent plugin.'
+Assert-True ($market.plugins[0].name -eq 'miniconda-python-env') 'Codex marketplace contains the wrong plugin.'
+foreach ($rel in @('.codex-plugin\plugin.json', 'skills\miniconda-python-env\SKILL.md', 'skills\miniconda-python-env\agents\openai.yaml')) {
+    $sourceText = (Get-Content -LiteralPath (Join-Path $RepoRoot $rel) -Raw -Encoding UTF8).Replace("`r`n", "`n").TrimEnd()
+    $snapshotText = (Get-Content -LiteralPath (Join-Path $RepoRoot ("plugins\miniconda-python-env\" + $rel)) -Raw -Encoding UTF8).Replace("`r`n", "`n").TrimEnd()
+    Assert-True ($sourceText -ceq $snapshotText) "Codex marketplace snapshot is stale: $rel"
+}
 $changelogText = Get-Content -LiteralPath $changelog -Raw -Encoding UTF8
 $topVersionMatch = [regex]::Match($changelogText, '(?m)^## \[(?<version>\d+\.\d+\.\d+)\]')
 Assert-True $topVersionMatch.Success 'CHANGELOG.md must start with a released version heading.'
@@ -79,6 +91,7 @@ Assert-TextPresent $readme 'install this skill' 'README quickstart must include 
 Assert-TextPresent $readme 'set up this Claude/Codex skill' 'README quickstart must include English setup variant.'
 Assert-TextPresent $readme 'enable this skill from' 'README quickstart must include English enable variant.'
 Assert-TextPresent $readme 'https://raw.githubusercontent.com/zzy256/miniconda-python-env/main/skills/miniconda-python-env/SKILL.md' 'README quickstart must include exact raw SKILL.md URL.'
+Assert-TextPresent $readme 'https://raw.githubusercontent.com/zzy256/miniconda-python-env/main/skills/miniconda-python-env/agents/openai.yaml' 'README quickstart must include exact raw openai.yaml URL.'
 Assert-TextPresent $readme '\.claude\\skills\\miniconda-python-env\\SKILL.md' 'README quickstart must include Claude Code skill target.'
 Assert-TextPresent $readme '\.codex\\skills\\miniconda-python-env\\SKILL.md' 'README quickstart must include Codex skill target.'
 Assert-TextPresent $readme '\.config\\claude-skills\\miniconda-python-env\.json' 'README quickstart must include config JSON target.'
@@ -96,5 +109,25 @@ Assert-True (($partialTemp | Out-String) -match 'missing required path') 'partia
 $partialTools = & powershell -NoProfile -ExecutionPolicy Bypass -File $setup -ToolsRoot 'D:\Tools' -Force 2>&1
 Assert-True ($LASTEXITCODE -eq 1) 'setup.ps1 with only -ToolsRoot should fail in redirected/non-interactive sessions.'
 Assert-True (($partialTools | Out-String) -match 'missing required path') 'partial-parameter guard should explain the missing required path.'
+
+Assert-TextPresent $skill 'Where-Object.*prefix:' 'environment.yml export must remove the machine-specific prefix entry.'
+Assert-TextPresent $skill 'Set-Content -LiteralPath .* -Encoding UTF8' 'environment.yml export must explicitly use UTF-8.'
+Assert-TextAbsent $skill 'env export --prefix "<env-path>" --no-builds >' 'environment.yml export must not use PowerShell redirection.'
+
+$testHome = Join-Path ([System.IO.Path]::GetTempPath()) ("miniconda-skill-test-" + [guid]::NewGuid())
+$oldUserProfile = $env:USERPROFILE
+try {
+    $env:USERPROFILE = $testHome
+    $setupOutput = & powershell -NoProfile -ExecutionPolicy Bypass -File $setup -TempEnvRoot 'C:\' -ToolsRoot 'D:\' -Agent codex -Force 2>&1
+    Assert-True ($LASTEXITCODE -eq 0) "setup.ps1 root-path test failed: $($setupOutput | Out-String)"
+    $testConfig = Get-Content -LiteralPath (Join-Path $testHome '.config\claude-skills\miniconda-python-env.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+    Assert-True ($testConfig.temp_env_root -eq 'C:\') 'setup.ps1 must preserve TempEnvRoot C:\, not C:.'
+    Assert-True ($testConfig.tools_root -eq 'D:\') 'setup.ps1 must preserve ToolsRoot D:\, not D:.'
+    Assert-True (Test-Path -LiteralPath (Join-Path $testHome '.codex\skills\miniconda-python-env\agents\openai.yaml')) 'setup.ps1 must install the complete skill directory, including agents/openai.yaml.'
+}
+finally {
+    $env:USERPROFILE = $oldUserProfile
+    if (Test-Path -LiteralPath $testHome) { Remove-Item -LiteralPath $testHome -Recurse -Force }
+}
 
 Write-Host 'miniconda-python-env verification passed.'
