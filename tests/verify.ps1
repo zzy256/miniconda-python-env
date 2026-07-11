@@ -58,6 +58,11 @@ $claudeMarketplace = Join-Path $RepoRoot '.claude-plugin\marketplace.json'
 
 $yaml = Get-Frontmatter $skill
 Assert-True ($yaml -match 'description:\s*>-') 'SKILL.md description must use folded scalar frontmatter.'
+$descMatch = [regex]::Match($yaml, '(?ms)^description:\s*>-\s*\r?\n(?<body>(?:[ \t]+.*(?:\r?\n|$))+)')
+Assert-True $descMatch.Success 'SKILL.md description folded scalar block not found for byte check.'
+$descText = ((($descMatch.Groups['body'].Value -split '\r?\n') | ForEach-Object { $_.Trim() } | Where-Object { $_ }) -join ' ')
+$descBytes = [System.Text.Encoding]::UTF8.GetByteCount($descText)
+Assert-True ($descBytes -le 1024) "SKILL.md description is $descBytes bytes; must be <= 1024 for the Codex metadata limit."
 Assert-True (Test-Path -LiteralPath $openaiYaml) 'Codex agents/openai.yaml metadata is missing.'
 Assert-TextPresent $openaiYaml '\$miniconda-python-env' 'openai.yaml default_prompt must explicitly mention the skill.'
 $market = Get-Content -LiteralPath $codexMarketplace -Raw -Encoding UTF8 | ConvertFrom-Json
