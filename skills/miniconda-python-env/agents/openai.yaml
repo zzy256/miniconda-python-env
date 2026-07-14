@@ -1,7 +1,7 @@
 interface:
   display_name: "Miniconda Python Env"
-  short_description: "Manage isolated Python environments on Windows"
-  default_prompt: "Use $miniconda-python-env to prepare an isolated environment for this Python task."
+  short_description: "Route and manage isolated Windows Python environments"
+  default_prompt: "Use $miniconda-python-env for this project-scoped Python task: reuse its manager-owned environment or safely create the right lifecycle; route persistent global CLIs elsewhere."
 
 policy:
   allow_implicit_invocation: true

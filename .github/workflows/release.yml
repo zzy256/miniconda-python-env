@@ -1,0 +1,105 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    outputs:
+      release-notes-base64: ${{ steps.release_metadata.outputs.notes_base64 }}
+    permissions:
+      contents: read
+    steps:
+      - name: Check out signed tag
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check tag and manifest version
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = (Get-Content .\.codex-plugin\plugin.json -Raw -Encoding UTF8 | ConvertFrom-Json).version
+          if ($env:GITHUB_REF_NAME -cne "v$version") {
+            throw "Tag $env:GITHUB_REF_NAME does not match manifest version $version."
+          }
+          $refJson = gh api "repos/$env:GITHUB_REPOSITORY/git/ref/tags/$env:GITHUB_REF_NAME"
+          if ($LASTEXITCODE -ne 0) { throw 'Could not inspect the GitHub tag ref.' }
+          $ref = $refJson | ConvertFrom-Json
+          if ($ref.object.type -cne 'tag') { throw 'Release tag must be an annotated signed tag.' }
+          $tagJson = gh api "repos/$env:GITHUB_REPOSITORY/git/tags/$($ref.object.sha)"
+          if ($LASTEXITCODE -ne 0) { throw 'Could not inspect the GitHub tag object.' }
+          $tag = $tagJson | ConvertFrom-Json
+          if (-not $tag.verification.verified) {
+            throw "GitHub did not verify the tag signature: $($tag.verification.reason)"
+          }
+          if ($tag.object.type -cne 'commit') {
+            throw 'The signed release tag must point directly to a commit.'
+          }
+          $head = git rev-parse HEAD
+          if ($LASTEXITCODE -ne 0 -or ($head -join '').Trim() -cne [string]$tag.object.sha) {
+            throw 'Checked-out HEAD does not match the GitHub-verified signed tag target.'
+          }
+      - name: Run PowerShell verification
+        shell: powershell
+        run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tests\verify.ps1
+
+      - name: Prepare release notes from the verified changelog
+        id: release_metadata
+        shell: powershell
+        run: |
+          $version = (Get-Content -LiteralPath .\.codex-plugin\plugin.json -Raw -Encoding UTF8 | ConvertFrom-Json).version
+          $changelog = Get-Content -LiteralPath .\CHANGELOG.md -Raw -Encoding UTF8
+          $pattern = '(?ms)^## \[' + [regex]::Escape($version) + '\][^\r\n]*\r?\n(?<body>.*?)(?=^## \[|\z)'
+          $match = [regex]::Match($changelog, $pattern)
+          if (-not $match.Success) { throw "CHANGELOG.md has no release section for $version." }
+          $install = @'
+
+## Install
+
+### Codex
+
+```powershell
+codex.cmd plugin marketplace add zzy256/miniconda-python-env --ref RELEASE_TAG
+codex.cmd plugin add miniconda-python-env@miniconda-python-env
+```
+
+### Claude Code
+
+```text
+/plugin marketplace add https://github.com/zzy256/miniconda-python-env.git#RELEASE_TAG
+/plugin install miniconda-python-env@miniconda-python-env
+```
+
+See the [README](https://github.com/zzy256/miniconda-python-env#readme) for lifecycle selection, dependency policy, and verified-tag installation.
+'@
+          $notes = $match.Groups['body'].Value.Trim() + ($install -replace 'RELEASE_TAG', $env:GITHUB_REF_NAME)
+          $encoded = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($notes))
+          [IO.File]::AppendAllText($env:GITHUB_OUTPUT, "notes_base64=$encoded`n", [Text.UTF8Encoding]::new($false))
+  release:
+    needs: verify
+    runs-on: windows-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Create GitHub Release
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_NOTES_BASE64: ${{ needs.verify.outputs.release-notes-base64 }}
+        run: |
+          $notesPath = Join-Path $env:RUNNER_TEMP 'release-notes.md'
+          $notes = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($env:RELEASE_NOTES_BASE64))
+          [IO.File]::WriteAllText($notesPath, $notes, [Text.UTF8Encoding]::new($false))
+          gh release create $env:GITHUB_REF_NAME --verify-tag --notes-file $notesPath --title "miniconda-python-env $env:GITHUB_REF_NAME"
+          if ($LASTEXITCODE -ne 0) { throw 'GitHub Release creation failed.' }

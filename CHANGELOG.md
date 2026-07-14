@@ -5,6 +5,163 @@ All notable changes to `miniconda-python-env` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] — 2026-07-14
+
+### Fixed
+
+- Isolate no-manifest create/install and owned cleanup from inherited `.condarc`
+  channels, default packages, pins, and `CONDA_*` overrides. Hold each minimal
+  child-only CONDARC against mutation, bind it to the originally-created Windows
+  file identity, and delete only that exact file after the native child exits.
+- Parse held PROJECT manifests with conda's own `YamlFileSpec`, force the same
+  built-in `environment.yml` specifier for preview and creation, and reject pip
+  sections or activation variables that direct-interpreter execution cannot
+  source-bind or apply.
+- Revalidate the complete no-manifest approval record during conda and pip
+  bootstrap, so ambient executable/path/version/package variables cannot drift.
+  Keep dependency solves on the approved Python major/minor, reject duplicate
+  `python` specs, recheck the interpreter, and reject pip subsections in export
+  rather than generating a restore manifest that this skill itself refuses.
+- Gate every setup, sync, config, `.gitignore`, manifest, and CONDARC fault hook
+  behind an explicit test mode; detect dangling reparse points and transaction
+  residue written by either the setup or runtime-config writer.
+- Load the installed helper under a temporary process-only execution-policy
+  bypass and restore the caller's original policy immediately, so the skill
+  works under the default Windows `Restricted` policy without persistent policy
+  changes or session-variable side effects.
+- Accept one legacy leading UTF-8 BOM in runtime configuration while retaining
+  strict UTF-8 decoding and fingerprinting the original bytes.
+- Give STANDALONE scripts a cross-day canonical-path identity, retain separate
+  durable ownership metadata after the creation claim is finalized, and reject
+  missing, unfinished, wrong-script, or tampered identity state.
+- Resolve the nearest Python project marker without crossing a nearer Git
+  boundary, preserve drive roots during canonicalization, and recognize Pixi,
+  Hatch, and Rye ownership instead of creating a parallel generic conda env.
+- Define the no-manifest Python default and bind lifecycle, root, prefix, conda
+  executable, Python version, channel policy, and validated package lists to a
+  fingerprint rechecked under the prefix lock before creation.
+- Restore the exact transaction marker when ordinary `conda create --prefix`
+  replaces the reserved directory, using the same marker-protection wrapper as
+  PROJECT creation before health checks, TEMP cleanup, or STANDALONE finalization.
+- Replace prose-only `environment.yml` moves with a mutex-protected,
+  same-directory CAS writer that normalizes line endings, performs atomic
+  replacement, retains backups, rejects concurrent writes, and preserves all
+  evidence if a second writer races restoration.
+- Remove the Claude marketplace `strict: false` component override that made an
+  apparently successful install fail to load because the marketplace and root
+  plugin manifests conflicted.
+- Read BOM-less UTF-8 configuration explicitly, validate both configured paths
+  on every use, reject drive-relative/unsafe paths, and make redirected setup
+  fail truthfully whenever a prompt or overwrite decision would be required.
+- Replace setup destinations as whole directories and roll back config plus all
+  previously committed targets when a later installation step fails.
+- Keep trigger origin (`EXPLICIT`/`IMPLICIT`) independent from environment
+  lifecycle (`TEMP`/`STANDALONE`/`PROJECT`). Reused venvs no longer flow into
+  conda install/export commands; reused conda installs retain their existing
+  channel policy, while PROJECT export is separately reclassified and audited.
+- Restrict TEMP cleanup to a direct, newly-created child of `TempEnvRoot`, refuse
+  reparse points, use conda-aware removal, and guarantee cleanup from `finally`.
+- Give TEMP environments timestamp/random suffixes and recheck just before
+  creation so concurrent or stale same-day directories are never mistaken for
+  owned environments.
+- Protect a new project `.conda` through `.gitignore` before creation and avoid
+  blindly overwriting an existing `environment.yml`.
+- Reject reserved Windows device names, invalid/ADS characters, trailing-dot or
+  trailing-space components, and leading/trailing whitespace in managed roots.
+- Protect setup and snapshot replacement with cross-process mutexes, fail closed
+  on abandoned transaction residue, and restore canonical snapshots before
+  attempting staging cleanup.
+- Fail closed when transaction-residue directories cannot be enumerated, verify
+  every rollback backup before deleting canonical state, and preserve the
+  current usable copy if a backup has disappeared.
+- Reject configured roots on unavailable drives and choose user-writable
+  defaults when `D:\` is not mounted.
+- Derive nested PROJECT `.gitignore` rules from the actual Git root, append
+  safely when the file lacks a final newline, and refuse traversed reparse-point
+  roots before TEMP creation or cleanup.
+- Put dependency installation and task execution inside the same post-create
+  `try/finally`, support `CONDA_EXE` from PowerShell conda initialization, and
+  preserve channels when creating from an existing project manifest.
+- Build the preferred conda candidate without provider resolution so a safe but
+  currently unavailable drive does not make detection fail before fallback.
+- Remove angle-bracket placeholders from frontmatter metadata so the official
+  Codex skill validator accepts both source and snapshot copies.
+- Prevent user `.condarc` channels (notably `defaults`) from leaking into an
+  isolated conda-forge environment export. Reclassify PROJECT exports, require
+  an approved preview for inherited policy, audit installed package sources,
+  and reject config/channel drift before writing a restore manifest.
+- Make isolated TEMP removal offline and channel-overridden; conda 26.1.1 can
+  otherwise block local `remove --all` on unrelated unaccepted defaults ToS.
+- Serialize first-use runtime-config writes with a per-path mutex, atomically
+  replace same-directory JSON only when its observed fingerprint still matches,
+  and preserve a concurrent writer's conflicting choice.
+- Record rollback backup path types and stable byte/tree fingerprints in setup
+  and snapshot sync; refuse canonical deletion when a backup is missing,
+  substituted, or modified, while preserving current and staged recovery copies.
+- Reject Windows' Unicode-superscript `COM`/`LPT` DOS-device aliases in
+  addition to the ordinary digit forms.
+- Apply one executable direct-child and reparse-point guard to TEMP,
+  STANDALONE, and PROJECT creation, and repeat it immediately before conda can
+  write the destination.
+- Detect uv, Poetry, and PDM ownership from `pyproject.toml` even before a lock
+  file exists, without treating duplicate same-manager signals as conflicts.
+- Pass every required ownership argument in the documented TEMP `finally`
+  cleanup call so the executable example cannot fall into parameter prompting.
+- Bind PROJECT approval to the manifest, destination, isolation mode, channel
+  configuration, resolved sources, variables, Python version, package count,
+  and dry-run result; recheck the complete record immediately before creation.
+- Use a dedicated absent solve prefix because conda 26 can remove an existing
+  prefix even for `env create --dry-run`; restore the exact ownership marker if
+  real `env create` removes it while replacing the approved destination.
+- Parse both legacy `actions.LINK` and current conda 26 environment-plan JSON,
+  require exactly one resolved Python version, and reject pip mappings that the
+  conda dry-run cannot bind to an approved source.
+- Hold the original PROJECT manifest read-only through each conda operation,
+  reject reparse paths and inline URL secrets, scrub inherited CI/ToS acceptance
+  variables in the child only, and use a minimal temporary `CONDARC` for safe
+  public manifests.
+- Export kept conda environments through `conda env export --no-builds`, remove
+  wrapped machine-specific `name`/`prefix` YAML, reject variables, credentials,
+  direct/editable URLs and local paths, and write approved channels plus
+  `nodefaults` for every non-preserve policy.
+
+### Changed
+
+- Tighten trigger metadata so project pip/pytest work still routes here while
+  read-only interpreter locate/version/status checks and persistent global or
+  pipx-style end-user CLI installation do not.
+- Require pinned official Miniconda sources, SHA-256 and applicable Authenticode
+  verification, explicit confirmation, and reconfirmation before any fallback.
+- Use checked `conda env export --no-builds` consistently so current and legacy
+  conda installations follow one audited YAML path. Clarify that channel
+  access—not Miniconda installation itself—may require user-owned Anaconda Terms
+  acceptance.
+- Mirror the complete Codex skill snapshot exactly, include all Mode 1 metadata,
+  and document the Windows-safe `codex.cmd` command form.
+- Make the AI installer use the transactional setup script from a pinned,
+  verified release tag instead of directly copying mutable `main` resources.
+- Use an explicit HTTPS Claude marketplace source and verify GitHub's signed tag
+  object plus the cloned HEAD rather than depending on SSH or a local keyring.
+- Trigger explicitly for runtime-root configuration requests and route later
+  root changes through the observed-state atomic writer instead of live JSON edits.
+- Pin repository text files to LF through `.gitattributes` to keep byte-exact
+  source/snapshot comparisons stable across Windows Git configurations.
+- Propagate a nonzero `gh release create` exit explicitly instead of relying on
+  shell-wrapper behavior.
+- Verify the GitHub-signed tag object and bind it to checkout `HEAD` before
+  executing repository test scripts without persisted credentials; grant write
+  permission only to a separate post-verification release job.
+- Rewrite the GitHub README around lifecycle and dependency-policy tables, a
+  marketplace-first quick start, and a compact ownership/cleanup decision flow.
+- Build GitHub Release notes from the verified tag's matching changelog section
+  and include pinned Codex and Claude Code installation commands.
+
+### Added
+
+- Add transactional setup, stale-file, rollback, UTF-8, description-budget,
+  exact-snapshot, lifecycle-policy, and optional isolated Claude load tests.
+- Add Windows verification/release workflows and a signed-tag release checklist.
+
 ## [1.1.2] — 2026-07-11
 
 ### Changed
@@ -110,7 +267,7 @@ Initial public release.
   - A — Temp mid-task script: env auto-deleted after task
   - B — Standalone keeper script: env retained + `environment.yml` generated
   - C — Formal / long-lived project: env lives at `<project-root>\.conda\` + `environment.yml`
-- **Conda-first dependency installs** with explicit `-c conda-forge --override-channels` (avoids Anaconda's ToS error introduced in 2024+); pip only as fallback
+- **Conda-first dependency installs** with explicit `-c conda-forge --override-channels` for newly created skill-owned environments; pip only as fallback. Later releases clarified that Anaconda default-channel access can require user acceptance, while Miniconda installation itself does not.
 - **Strict cleanup scope** for Scenario A: deletes ONLY this task's env folder; never widens to siblings or parents
 - **`setup.ps1`** for pre-configuration: writes the config file + copies SKILL.md to agent skills dirs (Claude Code + Codex)
 - Cross-agent support: `.claude-plugin/plugin.json` + `.codex-plugin/plugin.json` with Codex `interface` metadata

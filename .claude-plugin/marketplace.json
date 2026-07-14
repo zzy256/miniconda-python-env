@@ -6,17 +6,13 @@
   },
   "metadata": {
     "description": "Single-plugin marketplace for the miniconda-python-env skill",
-    "version": "1.1.2"
+    "version": "1.2.0"
   },
   "plugins": [
     {
       "name": "miniconda-python-env",
-      "description": "Standardize Python execution via Miniconda envs (A/B/C scenarios + strict cleanup rules + conda-first deps). Self-configuring on first use.",
-      "source": "./",
-      "strict": false,
-      "skills": [
-        "./skills/miniconda-python-env"
-      ]
+      "description": "Reuse or create safe Windows Python environments with explicit lifecycle, ownership, cleanup, and dependency rules.",
+      "source": "./"
     }
   ]
 }
