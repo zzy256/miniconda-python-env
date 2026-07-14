@@ -35,9 +35,14 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Could not inspect the GitHub tag ref.' }
           $ref = $refJson | ConvertFrom-Json
           if ($ref.object.type -cne 'tag') { throw 'Release tag must be an annotated signed tag.' }
-          $tagJson = gh api "repos/$env:GITHUB_REPOSITORY/git/tags/$($ref.object.sha)"
-          if ($LASTEXITCODE -ne 0) { throw 'Could not inspect the GitHub tag object.' }
-          $tag = $tagJson | ConvertFrom-Json
+          $tag = $null
+          for ($attempt = 1; $attempt -le 7; $attempt++) {
+            $tagJson = gh api "repos/$env:GITHUB_REPOSITORY/git/tags/$($ref.object.sha)"
+            if ($LASTEXITCODE -ne 0) { throw 'Could not inspect the GitHub tag object.' }
+            $tag = $tagJson | ConvertFrom-Json
+            if ($tag.verification.verified) { break }
+            if ($attempt -lt 7) { Start-Sleep -Seconds 5 }
+          }
           if (-not $tag.verification.verified) {
             throw "GitHub did not verify the tag signature: $($tag.verification.reason)"
           }
