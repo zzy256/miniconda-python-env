@@ -61,27 +61,26 @@ jobs:
           $pattern = '(?ms)^## \[' + [regex]::Escape($version) + '\][^\r\n]*\r?\n(?<body>.*?)(?=^## \[|\z)'
           $match = [regex]::Match($changelog, $pattern)
           if (-not $match.Success) { throw "CHANGELOG.md has no release section for $version." }
-          $install = @'
-
-## Install
-
-### Codex
-
-```powershell
-codex.cmd plugin marketplace add zzy256/miniconda-python-env --ref RELEASE_TAG
-codex.cmd plugin add miniconda-python-env@miniconda-python-env
-```
-
-### Claude Code
-
-```text
-/plugin marketplace add https://github.com/zzy256/miniconda-python-env.git#RELEASE_TAG
-/plugin install miniconda-python-env@miniconda-python-env
-```
-
-See the [README](https://github.com/zzy256/miniconda-python-env#readme) for lifecycle selection, dependency policy, and verified-tag installation.
-'@
-          $notes = $match.Groups['body'].Value.Trim() + ($install -replace 'RELEASE_TAG', $env:GITHUB_REF_NAME)
+          $install = @(
+            '## Install'
+            ''
+            '### Codex'
+            ''
+            '```powershell'
+            'codex.cmd plugin marketplace add zzy256/miniconda-python-env --ref RELEASE_TAG'
+            'codex.cmd plugin add miniconda-python-env@miniconda-python-env'
+            '```'
+            ''
+            '### Claude Code'
+            ''
+            '```text'
+            '/plugin marketplace add https://github.com/zzy256/miniconda-python-env.git#RELEASE_TAG'
+            '/plugin install miniconda-python-env@miniconda-python-env'
+            '```'
+            ''
+            'See the [README](https://github.com/zzy256/miniconda-python-env#readme) for lifecycle selection, dependency policy, and verified-tag installation.'
+          ) -join "`n"
+          $notes = $match.Groups['body'].Value.Trim() + "`n`n" + ($install -replace 'RELEASE_TAG', $env:GITHUB_REF_NAME)
           $encoded = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($notes))
           [IO.File]::AppendAllText($env:GITHUB_OUTPUT, "notes_base64=$encoded`n", [Text.UTF8Encoding]::new($false))
   release:

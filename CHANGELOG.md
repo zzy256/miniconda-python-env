@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Build release-note Markdown from PowerShell string arrays so the tag workflow
+  remains valid YAML while preserving fenced install examples.
 - Isolate no-manifest create/install and owned cleanup from inherited `.condarc`
   channels, default packages, pins, and `CONDA_*` overrides. Hold each minimal
   child-only CONDARC against mutation, bind it to the originally-created Windows
